@@ -6,7 +6,7 @@ Ein winziges Chibi-Haustier, das auf deiner Taskbar (Windows) bzw. am unteren Bi
 
 ## Installation
 
-Fertige Installer werden per GitHub Actions gebaut, sobald ein `v*`-Tag gepusht oder der Workflow manuell ausgelöst wird — siehe **Actions → Build installers** in diesem Repo, dort als Artefakte herunterladbar.
+Jedes Mal, wenn hier ein neues [GitHub Release](https://github.com/DundreDE/deskybuddy/releases) veröffentlicht wird, baut eine GitHub-Actions-Matrix automatisch alle drei Installer (Windows/macOS/Linux) und hängt sie direkt als Assets an das Release an — einfach die aktuellste Version von der [Releases-Seite](https://github.com/DundreDE/deskybuddy/releases/latest) herunterladen. Alternativ lässt sich der Workflow (**Actions → Build installers → Run workflow**) auch manuell auslösen; dann landen die Dateien nur als Workflow-Artefakte, nicht an einem Release.
 
 | Plattform | Datei | Hinweis |
 |---|---|---|

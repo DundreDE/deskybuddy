@@ -1,10 +1,12 @@
 name: Build installers
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch: {}
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -31,10 +33,25 @@ jobs:
       - run: npm run ${{ matrix.dist-script }}
       - uses: actions/upload-artifact@v4
         with:
-          name: buddy-${{ matrix.os }}
+          name: deskybuddy-${{ matrix.os }}
           path: |
             dist/*.exe
             dist/*.dmg
             dist/*.zip
             dist/*.AppImage
             dist/*.deb
+      # Only attaches to a release when the workflow was triggered by publishing one —
+      # a manual workflow_dispatch run still uploads the build-artifact above but skips this.
+      - name: Attach installers to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(dist/*.exe dist/*.dmg dist/*.zip dist/*.AppImage dist/*.deb)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No installer files found to upload" >&2
+            exit 1
+          fi
+          gh release upload "${{ github.event.release.tag_name }}" "${files[@]}" --clobber --repo "${{ github.repository }}"
