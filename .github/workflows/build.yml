@@ -28,9 +28,14 @@ jobs:
           node-version: 20
       - name: Install Linux native build deps
         if: matrix.os == 'ubuntu-latest'
+        # libuiohook (uiohook-napi's native addon) links against a wide swath of X11
+        # extension headers — Xrandr/Xtst/Xinerama/Xi/Xext/Xt/XF86Misc/Xlib-xcb — none of
+        # which ship on the runner by default, only their runtime .so counterparts.
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm libarchive-tools libx11-dev libxkbfile-dev libxtst-dev libxinerama-dev libxi-dev
+          sudo apt-get install -y rpm libarchive-tools \
+            libx11-dev libxkbfile-dev libxtst-dev libxinerama-dev libxi-dev \
+            libxrandr-dev libxext-dev libxt-dev libxxf86misc-dev libx11-xcb-dev
       - run: npm ci
       - run: npm run ${{ matrix.dist-script }}
       - uses: actions/upload-artifact@v4
