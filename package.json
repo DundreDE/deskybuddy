@@ -1,0 +1,61 @@
+{
+  "name": "deskybuddy",
+  "version": "1.0.0",
+  "description": "DeskyBuddy — a cute chibi desktop pet that sits on your taskbar.",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node scripts/generate-icon.js",
+    "dist": "electron-builder --win --linux",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "active-win": "^8.2.1",
+    "uiohook-napi": "^1.5.5"
+  },
+  "build": {
+    "appId": "com.deskybuddy.app",
+    "productName": "DeskyBuddy",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-settings.js",
+      "renderer/**/*",
+      "native/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }, { "target": "zip", "arch": ["x64", "arm64"] }],
+      "category": "public.app-category.entertainment",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }, { "target": "deb", "arch": ["x64"] }],
+      "category": "Utility",
+      "icon": "build/icon.png",
+      "maintainer": "deskybuddy"
+    }
+  }
+}

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <title>DeskyBuddy – Einstellungen</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f2ee;
+      --fg: #3a2e2e;
+      --card: #ffffff;
+      --border: #e0dad2;
+      --accent: #ff7a45;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #201c1c;
+        --fg: #f0e9e4;
+        --card: #2c2626;
+        --border: #443a3a;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    h1 {
+      font-size: 17px;
+      margin: 0 0 4px;
+    }
+    p.hint {
+      margin: 0 0 18px;
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .option .text { flex: 1; }
+    .option .title { font-size: 13.5px; font-weight: 600; }
+    .option .desc { font-size: 12px; opacity: 0.7; margin-top: 2px; line-height: 1.4; }
+    .switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #bbb3a9;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 2px;
+      top: 2px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.15s ease;
+    }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider::before { transform: translateX(18px); }
+
+    .character-picker {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .character-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 8px 12px;
+      cursor: pointer;
+    }
+    .character-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .character-card:has(input:checked) { border-color: var(--accent); }
+    .character-card .emoji { font-size: 30px; line-height: 1; }
+    .character-card .name { font-size: 12.5px; font-weight: 600; }
+    .character-card { position: relative; }
+    .character-gear {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      background: var(--bg);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .collar-picker {
+      display: none;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: -8px 0 18px;
+    }
+    .collar-picker.visible { display: flex; }
+    .collar-picker .label { flex-basis: 100%; font-size: 12px; opacity: 0.7; margin-bottom: 2px; }
+    .collar-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+    .collar-swatch.selected { border-color: var(--fg); }
+    .warning-banner {
+      display: none;
+      background: #fff3cd;
+      border: 1px solid #e0b13d;
+      color: #6b5215;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .warning-banner { background: #3a331a; border-color: #6b5215; color: #f0d998; }
+    }
+    .warning-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+  <h1>DeskyBuddy – Einstellungen</h1>
+  <p class="hint">Änderungen wirken sofort.</p>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Energiesparmodus</div>
+      <div class="desc">Pausiert Tipp-/Musik-/Vollbild-Erkennung, Herumlaufen und alle Idle-Animationen temporär, ohne die App neu zu starten. Wird beim nächsten Start von DeskyBuddy wieder zurückgesetzt.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="powerSave" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Charakter</div>
+      <div class="desc">Wähle, wer auf deinem Bildschirm herumläuft.</div>
+    </div>
+  </div>
+  <div class="character-picker">
+    <label class="character-card">
+      <input type="radio" name="character" value="crab" id="character-crab" />
+      <span class="emoji">🦀</span>
+      <span class="name">Krabbe</span>
+    </label>
+    <label class="character-card">
+      <input type="radio" name="character" value="avocado" id="character-avocado" />
+      <span class="emoji">🥑</span>
+      <span class="name">Avocado</span>
+    </label>
+    <label class="character-card">
+      <input type="radio" name="character" value="citrus" id="character-citrus" />
+      <span class="emoji">🍋</span>
+      <span class="name">Zitrusscheibe</span>
+    </label>
+    <label class="character-card">
+      <input type="radio" name="character" value="bee" id="character-bee" />
+      <button type="button" class="character-gear" id="beeGearBtn" title="Halstuch-Farbe" aria-label="Halstuch-Farbe wählen">⚙️</button>
+      <span class="emoji">🐝</span>
+      <span class="name">Biene</span>
+    </label>
+  </div>
+  <div class="collar-picker" id="collarPicker">
+    <span class="label">Halstuch-Farbe der Biene</span>
+    <button type="button" class="collar-swatch" data-color="#8fd6ff" style="background:#8fd6ff"></button>
+    <button type="button" class="collar-swatch" data-color="#ffb3c6" style="background:#ffb3c6"></button>
+    <button type="button" class="collar-swatch" data-color="#ff6b6b" style="background:#ff6b6b"></button>
+    <button type="button" class="collar-swatch" data-color="#7ed957" style="background:#7ed957"></button>
+    <button type="button" class="collar-swatch" data-color="#ffd166" style="background:#ffd166"></button>
+    <button type="button" class="collar-swatch" data-color="#b28dff" style="background:#b28dff"></button>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Automatisch starten</div>
+      <div class="desc">DeskyBuddy startet mit Windows.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="autostart" /><span class="slider"></span></label>
+  </div>
+  <div class="warning-banner" id="autostartWarning">
+    ⚠️ Autostart ist aktiviert, aber Windows hat ihn blockiert. Bitte unter <b>Einstellungen → Apps → Autostart</b> "DeskyBuddy" (bzw. "Electron") manuell aktivieren.
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Augen folgen der Maus</div>
+      <div class="desc">DeskyBuddy schaut in die Richtung deines Mauszeigers.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="mouseLook" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Tipp-Erkennung</div>
+      <div class="desc">Setzt sich mit einem Laptop hin, wenn du viel schreibst. Zählt nur Tastenanschläge, speichert nie was du tippst.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="typingDetection" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Musik-Erkennung</div>
+      <div class="desc">Setzt Kopfhörer auf, wenn gerade Musik läuft (Spotify, YouTube Music, ...).</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="musicDetection" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Abwesenheits-Erkennung</div>
+      <div class="desc">DeskyBuddy wird schläfrig (Zzz), wenn du ein paar Minuten weder Tastatur noch Maus benutzt hast — läuft nebenbei weiter, ohne die Idle-Animationen zu unterbrechen.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="afkDetection" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Mehreren Bildschirmen folgen</div>
+      <div class="desc">DeskyBuddy wechselt zu dem Monitor, auf dem gerade dein aktives Fenster (oder die Maus) ist.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="multiMonitorFollow" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Bei Vollbild-Spielen ausblenden</div>
+      <div class="desc">DeskyBuddy versteckt sich, solange eine App im Vollbild läuft.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="hideFullscreen" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Immer Tag-Modus</div>
+      <div class="desc">DeskyBuddy sieht immer wie am Tag aus, auch nachts — für jeden Charakter.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="alwaysDay" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title">Idle-Animationen</div>
+      <div class="desc">Wie oft DeskyBuddy von selbst eine kleine Aktion macht (lesen, gähnen, würfeln ...), wenn er gerade nichts anderes tut. <span id="idleIntervalLabel">alle ~30s</span></div>
+      <input type="range" id="idleIntervalSec" min="5" max="180" step="5" style="width: 100%; margin-top: 8px;" />
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

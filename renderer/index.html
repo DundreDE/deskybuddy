@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'none';" />
+  <title>DeskyBuddy</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage">
+    <div id="speech-bubble" class="hidden"><span id="speech-text"></span></div>
+    <div id="particles"></div>
+    <div id="dragon-mount">
+      <div id="prop-mount"></div>
+    </div>
+  </div>
+  <script src="dragon.js"></script>
+  <script src="avocado.js"></script>
+  <script src="citrus.js"></script>
+  <script src="bee.js"></script>
+  <script src="state-machine.js"></script>
+  <script src="props.js"></script>
+  <script src="idle-pool.js"></script>
+  <script src="idle-director.js"></script>
+  <script src="sounds.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
