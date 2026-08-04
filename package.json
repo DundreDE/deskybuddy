@@ -23,6 +23,7 @@
   "build": {
     "appId": "com.deskybuddy.app",
     "productName": "DeskyBuddy",
+    "publish": null,
     "directories": {
       "output": "dist",
       "buildResources": "build"
