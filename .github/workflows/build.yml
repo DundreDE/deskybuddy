@@ -29,13 +29,15 @@ jobs:
       - name: Install Linux native build deps
         if: matrix.os == 'ubuntu-latest'
         # libuiohook (uiohook-napi's native addon) links against a wide swath of X11
-        # extension headers — Xrandr/Xtst/Xinerama/Xi/Xext/Xt/XF86Misc/Xlib-xcb — none of
-        # which ship on the runner by default, only their runtime .so counterparts.
+        # extension headers — Xrandr/Xtst/Xinerama/Xi/Xext/Xt/Xlib-xcb — none of which
+        # ship on the runner by default, only their runtime .so counterparts. (XF86Misc
+        # support is dead code here — uiohook-napi's binding.gyp never defines
+        # USE_XF86MISC — and libxxf86misc-dev doesn't even exist on Ubuntu 24.04 anymore.)
         run: |
           sudo apt-get update
           sudo apt-get install -y rpm libarchive-tools \
             libx11-dev libxkbfile-dev libxtst-dev libxinerama-dev libxi-dev \
-            libxrandr-dev libxext-dev libxt-dev libxxf86misc-dev libx11-xcb-dev
+            libxrandr-dev libxext-dev libxt-dev libx11-xcb-dev
       - run: npm ci
       - run: npm run ${{ matrix.dist-script }}
       - uses: actions/upload-artifact@v4
