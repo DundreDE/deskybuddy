@@ -73,6 +73,7 @@ const DEFAULT_SETTINGS = {
   beeCollarColor: '#8fd6ff',
   alwaysDay: false,
   idleIntervalSec: 30, // average seconds between idle-pool animations (renderer picks within +/-50%)
+  onboardingCompleted: false,
 };
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -787,6 +788,7 @@ function buildMenu() {
     { label: 'Energiesparmodus', type: 'checkbox', checked: powerSaveMode, click: () => setPowerSaveMode(!powerSaveMode) },
     { type: 'separator' },
     { label: 'Einstellungen...', click: () => createSettingsWindow() },
+    { label: 'Tutorial erneut anzeigen', click: () => { if (win && !win.isDestroyed()) win.webContents.send('show-onboarding'); } },
     { type: 'separator' },
     { label: 'Beenden', click: () => app.quit() },
   ]);
@@ -888,7 +890,12 @@ function createWindow() {
 
   win.once('ready-to-show', () => win.show());
   win.webContents.on('did-finish-load', () => {
-    win.webContents.send('init-config', { forceNight: FORCE_NIGHT, character: settings.character, alwaysDay: settings.alwaysDay, idleIntervalSec: settings.idleIntervalSec, beeCollarColor: settings.beeCollarColor });
+    const showOnboarding = !settings.onboardingCompleted;
+    win.webContents.send('init-config', { forceNight: FORCE_NIGHT, character: settings.character, alwaysDay: settings.alwaysDay, idleIntervalSec: settings.idleIntervalSec, beeCollarColor: settings.beeCollarColor, showOnboarding });
+    if (showOnboarding) {
+      settings.onboardingCompleted = true;
+      saveSettingsToDisk();
+    }
   });
 
   win.on('closed', () => {
