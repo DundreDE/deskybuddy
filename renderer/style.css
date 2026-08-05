@@ -206,57 +206,169 @@ html, body {
 
 /* --- idle-animation pool hard-keyframe motion classes (idle-director.js) ---
    Each has a plain and a *Left variant so it composes with the existing facing-left
-   scaleX(-1) mirroring instead of momentarily un-flipping the sprite. */
+   scaleX(-1) mirroring instead of momentarily un-flipping the sprite. Extra keyframe
+   stops (anticipation / overshoot / squash-stretch) give the motion more life while
+   the steps() timing function keeps every stop a crisp, un-tweened jump. */
 
-#dragon-canvas.anim-stretch { animation: animStretch 0.5s steps(3) infinite; }
-#dragon-canvas.anim-stretch.facing-left { animation: animStretchLeft 0.5s steps(3) infinite; }
-@keyframes animStretch { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-4px) scaleY(1.08); } }
-@keyframes animStretchLeft { 0%, 100% { transform: scaleX(-1) translateY(0) scaleY(1); } 50% { transform: scaleX(-1) translateY(-4px) scaleY(1.08); } }
+#dragon-canvas.anim-stretch { animation: animStretch 0.6s steps(5) infinite; }
+#dragon-canvas.anim-stretch.facing-left { animation: animStretchLeft 0.6s steps(5) infinite; }
+@keyframes animStretch {
+  0% { transform: translateY(0) scaleY(1); }
+  20% { transform: translateY(1px) scaleY(0.96); }
+  55% { transform: translateY(-4px) scaleY(1.1); }
+  80% { transform: translateY(-2px) scaleY(1.04); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+@keyframes animStretchLeft {
+  0% { transform: scaleX(-1) translateY(0) scaleY(1); }
+  20% { transform: scaleX(-1) translateY(1px) scaleY(0.96); }
+  55% { transform: scaleX(-1) translateY(-4px) scaleY(1.1); }
+  80% { transform: scaleX(-1) translateY(-2px) scaleY(1.04); }
+  100% { transform: scaleX(-1) translateY(0) scaleY(1); }
+}
 
-#dragon-canvas.anim-spin { animation: animSpin 0.5s steps(4) infinite; }
-#dragon-canvas.anim-spin.facing-left { animation: animSpinLeft 0.5s steps(4) infinite; }
-@keyframes animSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes animSpinLeft { 0% { transform: scaleX(-1) rotate(0deg); } 100% { transform: scaleX(-1) rotate(-360deg); } }
+#dragon-canvas.anim-spin { animation: animSpin 0.6s steps(8) infinite; }
+#dragon-canvas.anim-spin.facing-left { animation: animSpinLeft 0.6s steps(8) infinite; }
+@keyframes animSpin {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes animSpinLeft {
+  0% { transform: scaleX(-1) rotate(0deg); }
+  25% { transform: scaleX(-1) rotate(-90deg); }
+  50% { transform: scaleX(-1) rotate(-180deg); }
+  75% { transform: scaleX(-1) rotate(-270deg); }
+  100% { transform: scaleX(-1) rotate(-360deg); }
+}
 
-#dragon-canvas.anim-wobble { animation: animWobble 0.3s steps(2) infinite; }
-#dragon-canvas.anim-wobble.facing-left { animation: animWobbleLeft 0.3s steps(2) infinite; }
-@keyframes animWobble { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
-@keyframes animWobbleLeft { 0%, 100% { transform: scaleX(-1) rotate(-6deg); } 50% { transform: scaleX(-1) rotate(6deg); } }
+#dragon-canvas.anim-wobble { animation: animWobble 0.4s steps(4) infinite; }
+#dragon-canvas.anim-wobble.facing-left { animation: animWobbleLeft 0.4s steps(4) infinite; }
+@keyframes animWobble {
+  0% { transform: rotate(-6deg); }
+  25% { transform: rotate(0deg); }
+  50% { transform: rotate(6deg); }
+  75% { transform: rotate(0deg); }
+  100% { transform: rotate(-6deg); }
+}
+@keyframes animWobbleLeft {
+  0% { transform: scaleX(-1) rotate(-6deg); }
+  25% { transform: scaleX(-1) rotate(0deg); }
+  50% { transform: scaleX(-1) rotate(6deg); }
+  75% { transform: scaleX(-1) rotate(0deg); }
+  100% { transform: scaleX(-1) rotate(-6deg); }
+}
 
-#dragon-canvas.anim-bounce { animation: animBounce 0.32s steps(3) infinite; }
-#dragon-canvas.anim-bounce.facing-left { animation: animBounceLeft 0.32s steps(3) infinite; }
-@keyframes animBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-@keyframes animBounceLeft { 0%, 100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-10px); } }
+#dragon-canvas.anim-bounce { animation: animBounce 0.42s steps(5) infinite; }
+#dragon-canvas.anim-bounce.facing-left { animation: animBounceLeft 0.42s steps(5) infinite; }
+@keyframes animBounce {
+  0% { transform: translateY(0) scaleY(1); }
+  20% { transform: translateY(2px) scaleY(0.9); }
+  50% { transform: translateY(-10px) scaleY(1.05); }
+  80% { transform: translateY(-2px) scaleY(0.97); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+@keyframes animBounceLeft {
+  0% { transform: scaleX(-1) translateY(0) scaleY(1); }
+  20% { transform: scaleX(-1) translateY(2px) scaleY(0.9); }
+  50% { transform: scaleX(-1) translateY(-10px) scaleY(1.05); }
+  80% { transform: scaleX(-1) translateY(-2px) scaleY(0.97); }
+  100% { transform: scaleX(-1) translateY(0) scaleY(1); }
+}
 
-#dragon-canvas.anim-scuttle { animation: animScuttle 0.4s steps(3) infinite; }
-#dragon-canvas.anim-scuttle.facing-left { animation: animScuttleLeft 0.4s steps(3) infinite; }
-@keyframes animScuttle { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-9px); } }
-@keyframes animScuttleLeft { 0%, 100% { transform: scaleX(-1) translateX(0); } 50% { transform: scaleX(-1) translateX(9px); } }
+#dragon-canvas.anim-scuttle { animation: animScuttle 0.5s steps(4) infinite; }
+#dragon-canvas.anim-scuttle.facing-left { animation: animScuttleLeft 0.5s steps(4) infinite; }
+@keyframes animScuttle {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(-9px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+@keyframes animScuttleLeft {
+  0% { transform: scaleX(-1) translateX(0); }
+  25% { transform: scaleX(-1) translateX(4px); }
+  50% { transform: scaleX(-1) translateX(9px); }
+  75% { transform: scaleX(-1) translateX(4px); }
+  100% { transform: scaleX(-1) translateX(0); }
+}
 
-#dragon-canvas.anim-dig { animation: animDig 0.5s steps(3) infinite alternate; }
-#dragon-canvas.anim-dig.facing-left { animation: animDigLeft 0.5s steps(3) infinite alternate; }
-@keyframes animDig { 0% { transform: translateY(0) scaleY(1); } 100% { transform: translateY(6px) scaleY(0.7); } }
-@keyframes animDigLeft { 0% { transform: scaleX(-1) translateY(0) scaleY(1); } 100% { transform: scaleX(-1) translateY(6px) scaleY(0.7); } }
+#dragon-canvas.anim-dig { animation: animDig 0.6s steps(4) infinite alternate; }
+#dragon-canvas.anim-dig.facing-left { animation: animDigLeft 0.6s steps(4) infinite alternate; }
+@keyframes animDig {
+  0% { transform: translateY(0) scaleY(1); }
+  35% { transform: translateY(2px) scaleY(0.92); }
+  70% { transform: translateY(4px) scaleY(0.8); }
+  100% { transform: translateY(6px) scaleY(0.7); }
+}
+@keyframes animDigLeft {
+  0% { transform: scaleX(-1) translateY(0) scaleY(1); }
+  35% { transform: scaleX(-1) translateY(2px) scaleY(0.92); }
+  70% { transform: scaleX(-1) translateY(4px) scaleY(0.8); }
+  100% { transform: scaleX(-1) translateY(6px) scaleY(0.7); }
+}
 
-#dragon-canvas.anim-shake { animation: animShake 0.15s steps(2) infinite; }
-#dragon-canvas.anim-shake.facing-left { animation: animShakeLeft 0.15s steps(2) infinite; }
-@keyframes animShake { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-3px); } }
-@keyframes animShakeLeft { 0%, 100% { transform: scaleX(-1) translateX(0); } 50% { transform: scaleX(-1) translateX(3px); } }
+#dragon-canvas.anim-shake { animation: animShake 0.2s steps(4) infinite; }
+#dragon-canvas.anim-shake.facing-left { animation: animShakeLeft 0.2s steps(4) infinite; }
+@keyframes animShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+@keyframes animShakeLeft {
+  0% { transform: scaleX(-1) translateX(0); }
+  25% { transform: scaleX(-1) translateX(3px); }
+  50% { transform: scaleX(-1) translateX(0); }
+  75% { transform: scaleX(-1) translateX(-3px); }
+  100% { transform: scaleX(-1) translateX(0); }
+}
 
-#dragon-canvas.anim-tilt { animation: animTilt 0.9s steps(2) infinite alternate; }
-#dragon-canvas.anim-tilt.facing-left { animation: animTiltLeft 0.9s steps(2) infinite alternate; }
-@keyframes animTilt { 0% { transform: rotate(0deg); } 100% { transform: rotate(-7deg); } }
-@keyframes animTiltLeft { 0% { transform: scaleX(-1) rotate(0deg); } 100% { transform: scaleX(-1) rotate(7deg); } }
+#dragon-canvas.anim-tilt { animation: animTilt 0.9s steps(4) infinite alternate; }
+#dragon-canvas.anim-tilt.facing-left { animation: animTiltLeft 0.9s steps(4) infinite alternate; }
+@keyframes animTilt {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(-2deg); }
+  75% { transform: rotate(-6deg); }
+  100% { transform: rotate(-7deg); }
+}
+@keyframes animTiltLeft {
+  0% { transform: scaleX(-1) rotate(0deg); }
+  40% { transform: scaleX(-1) rotate(2deg); }
+  75% { transform: scaleX(-1) rotate(6deg); }
+  100% { transform: scaleX(-1) rotate(7deg); }
+}
 
-#dragon-canvas.anim-nudge { animation: animNudge 0.3s steps(2) infinite; }
-#dragon-canvas.anim-nudge.facing-left { animation: animNudgeLeft 0.3s steps(2) infinite; }
-@keyframes animNudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-@keyframes animNudgeLeft { 0%, 100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-3px); } }
+#dragon-canvas.anim-nudge { animation: animNudge 0.36s steps(4) infinite; }
+#dragon-canvas.anim-nudge.facing-left { animation: animNudgeLeft 0.36s steps(4) infinite; }
+@keyframes animNudge {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-3px); }
+  70% { transform: translateY(-1px); }
+  100% { transform: translateY(0); }
+}
+@keyframes animNudgeLeft {
+  0% { transform: scaleX(-1) translateY(0); }
+  40% { transform: scaleX(-1) translateY(-3px); }
+  70% { transform: scaleX(-1) translateY(-1px); }
+  100% { transform: scaleX(-1) translateY(0); }
+}
 
-#dragon-canvas.anim-squish { animation: animSquish 0.28s steps(2) infinite alternate; }
-#dragon-canvas.anim-squish.facing-left { animation: animSquishLeft 0.28s steps(2) infinite alternate; }
-@keyframes animSquish { 0% { transform: scaleX(1) scaleY(1); } 100% { transform: scaleX(1.15) scaleY(0.7); } }
-@keyframes animSquishLeft { 0% { transform: scaleX(-1) scaleY(1); } 100% { transform: scaleX(-1.15) scaleY(0.7); } }
+#dragon-canvas.anim-squish { animation: animSquish 0.34s steps(3) infinite alternate; }
+#dragon-canvas.anim-squish.facing-left { animation: animSquishLeft 0.34s steps(3) infinite alternate; }
+@keyframes animSquish {
+  0% { transform: scaleX(1) scaleY(1); }
+  50% { transform: scaleX(1.08) scaleY(0.85); }
+  100% { transform: scaleX(1.15) scaleY(0.7); }
+}
+@keyframes animSquishLeft {
+  0% { transform: scaleX(-1) scaleY(1); }
+  50% { transform: scaleX(-1.08) scaleY(0.85); }
+  100% { transform: scaleX(-1.15) scaleY(0.7); }
+}
 
 /* --- power save: freezes every looping CSS animation on the sprite (stops repeated
    repaint/compositing) and dims it a little as a visual cue that it's intentional --- */
@@ -270,39 +382,51 @@ html, body {
 /* --- idle / walk / interaction motion (whole-sprite translate only, keeps pixels crisp) --- */
 
 #dragon-canvas {
-  animation: breatheBob 2.6s steps(4) infinite;
+  animation: breatheBob 2.6s steps(6) infinite;
 }
 
 @keyframes breatheBob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-1px); }
+  55% { transform: translateY(-2px); }
+  80% { transform: translateY(-1px); }
+  100% { transform: translateY(0); }
 }
 
 #dragon-canvas.facing-left {
-  animation: breatheBobLeft 2.6s steps(4) infinite;
+  animation: breatheBobLeft 2.6s steps(6) infinite;
 }
 
 @keyframes breatheBobLeft {
-  0%, 100% { transform: scaleX(-1) translateY(0); }
-  50% { transform: scaleX(-1) translateY(-2px); }
+  0% { transform: scaleX(-1) translateY(0); }
+  30% { transform: scaleX(-1) translateY(-1px); }
+  55% { transform: scaleX(-1) translateY(-2px); }
+  80% { transform: scaleX(-1) translateY(-1px); }
+  100% { transform: scaleX(-1) translateY(0); }
 }
 
 #dragon-canvas.walking {
-  animation: walkBob 0.4s steps(2) infinite;
+  animation: walkBob 0.4s steps(4) infinite;
 }
 
 #dragon-canvas.walking.facing-left {
-  animation: walkBobLeft 0.4s steps(2) infinite;
+  animation: walkBobLeft 0.4s steps(4) infinite;
 }
 
 @keyframes walkBob {
-  0%, 100% { transform: translateY(0); }
+  0% { transform: translateY(0); }
+  25% { transform: translateY(-1px); }
   50% { transform: translateY(-3px); }
+  75% { transform: translateY(-1px); }
+  100% { transform: translateY(0); }
 }
 
 @keyframes walkBobLeft {
-  0%, 100% { transform: scaleX(-1) translateY(0); }
+  0% { transform: scaleX(-1) translateY(0); }
+  25% { transform: scaleX(-1) translateY(-1px); }
   50% { transform: scaleX(-1) translateY(-3px); }
+  75% { transform: scaleX(-1) translateY(-1px); }
+  100% { transform: scaleX(-1) translateY(0); }
 }
 
 #stage.state-sleeping #dragon-canvas {
@@ -314,31 +438,39 @@ html, body {
 }
 
 @keyframes sleepBob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-1px); }
-}
-
-@keyframes sleepBobLeft {
-  0%, 100% { transform: scaleX(-1) translateY(0); }
-  50% { transform: scaleX(-1) translateY(-1px); }
-}
-
-#dragon-canvas.hop {
-  animation: hop 0.4s steps(4) 1;
-}
-
-#dragon-canvas.hop.facing-left {
-  animation: hopLeft 0.4s steps(4) 1;
-}
-
-@keyframes hop {
   0% { transform: translateY(0); }
-  40% { transform: translateY(-7px); }
+  30% { transform: translateY(-1px); }
+  70% { transform: translateY(-1px); }
   100% { transform: translateY(0); }
 }
 
-@keyframes hopLeft {
+@keyframes sleepBobLeft {
   0% { transform: scaleX(-1) translateY(0); }
-  40% { transform: scaleX(-1) translateY(-7px); }
+  30% { transform: scaleX(-1) translateY(-1px); }
+  70% { transform: scaleX(-1) translateY(-1px); }
   100% { transform: scaleX(-1) translateY(0); }
+}
+
+#dragon-canvas.hop {
+  animation: hop 0.45s steps(6) 1;
+}
+
+#dragon-canvas.hop.facing-left {
+  animation: hopLeft 0.45s steps(6) 1;
+}
+
+@keyframes hop {
+  0% { transform: translateY(0) scaleY(1); }
+  35% { transform: translateY(-7px) scaleY(1.05); }
+  60% { transform: translateY(-2px) scaleY(0.95); }
+  85% { transform: translateY(1px) scaleY(0.92); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+
+@keyframes hopLeft {
+  0% { transform: scaleX(-1) translateY(0) scaleY(1); }
+  35% { transform: scaleX(-1) translateY(-7px) scaleY(1.05); }
+  60% { transform: scaleX(-1) translateY(-2px) scaleY(0.95); }
+  85% { transform: scaleX(-1) translateY(1px) scaleY(0.92); }
+  100% { transform: scaleX(-1) translateY(0) scaleY(1); }
 }
