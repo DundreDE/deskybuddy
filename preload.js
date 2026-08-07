@@ -47,4 +47,7 @@ contextBridge.exposeInMainWorld('buddyAPI', {
   onPowerSaveUpdate: (callback) => {
     ipcRenderer.on('power-save-updated', (_event, payload) => callback(payload));
   },
+  onShowOnboarding: (callback) => {
+    ipcRenderer.on('show-onboarding', () => callback());
+  },
 });

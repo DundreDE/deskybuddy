@@ -11,6 +11,15 @@ const PHRASES = {
   afterFeed: ['Lecker!', 'Mmmh, danke!', '*schmatzt*', 'Mehr Snacks bitte!'],
 };
 
+const ONBOARDING_STEPS = [
+  { text: 'Hallo! Ich bin dein DeskyBuddy 👋', duration: 3200 },
+  { text: 'Zieh mich einfach mit der Maus herum!', duration: 3600 },
+  { text: 'Ein Klick auf mich = Streicheln 🐾', duration: 3200 },
+  { text: 'Rechtsklick öffnet mein Menü — dort kannst du mich füttern, schlafen legen und mehr', duration: 4400 },
+  { text: 'Unter „Einstellungen“ kannst du mich ganz nach deinem Geschmack anpassen ⚙️', duration: 4400 },
+  { text: 'Über mein Tray-Icon findest du dieses Tutorial jederzeit wieder. Viel Spaß mit mir! 💛', duration: 4400 },
+];
+
 const PARTICLE_SHAPES = {
   heart: ['.X.X.', 'XXXXX', 'XXXXX', '.XXX.', '..X..'],
   sparkle: ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..'],
@@ -79,7 +88,7 @@ function createLaptopAccessory() {
   return canvas;
 }
 
-const SPRITE_MODULES = { crab: window.PixelDragon, avocado: window.PixelAvocado, citrus: window.PixelCitrus, bee: window.PixelBee };
+const SPRITE_MODULES = { crab: window.PixelDragon, avocado: window.PixelAvocado, citrus: window.PixelCitrus, bee: window.PixelBee, monkey: window.PixelMonkey };
 
 let stageEl, dragonSprite, laptopEl, propMountEl;
 let isTypingFlag = false;
@@ -157,6 +166,8 @@ let blinkTimer = null;
 let speechTimer = null;
 let bubbleHideTimer = null;
 let zzzTimer = null;
+let onboardingActive = false;
+let onboardingTimer = null;
 
 function isNightTime() {
   if (alwaysDayFlag) return false;
@@ -223,6 +234,26 @@ function spawnParticles(kind, count) {
   }
 }
 
+// --- onboarding (first-launch walkthrough, replayable from the tray menu) ---
+
+function runOnboardingStep(i) {
+  if (i >= ONBOARDING_STEPS.length) {
+    onboardingActive = false;
+    if (idleDirector) idleDirector.resume();
+    return;
+  }
+  const { text, duration } = ONBOARDING_STEPS[i];
+  queueSpeech(text, duration);
+  onboardingTimer = setTimeout(() => runOnboardingStep(i + 1), duration + 500);
+}
+
+function startOnboarding() {
+  clearTimeout(onboardingTimer);
+  onboardingActive = true;
+  if (idleDirector) idleDirector.pause();
+  runOnboardingStep(0);
+}
+
 // --- power save (temporary, main-process-driven — reset on next launch) ---
 
 function applyPowerSaveVisual() {
@@ -259,7 +290,7 @@ function scheduleIdleSpeech() {
   const delay = 20000 + Math.random() * 70000;
   speechTimer = setTimeout(() => {
     const bubble = document.getElementById('speech-bubble');
-    if (!bubble.classList.contains('visible')) {
+    if (!onboardingActive && !bubble.classList.contains('visible')) {
       queueSpeech(pickPhrase(sleeping ? 'idleNight' : 'idleDay'));
     }
     scheduleIdleSpeech();
@@ -429,7 +460,7 @@ function wireEvents() {
     }, duration);
   });
 
-  window.buddyAPI.onInitConfig(({ forceNight: fn, character, alwaysDay, idleIntervalSec: interval, beeCollarColor: collar }) => {
+  window.buddyAPI.onInitConfig(({ forceNight: fn, character, alwaysDay, idleIntervalSec: interval, beeCollarColor: collar, showOnboarding }) => {
     forceNight = fn;
     alwaysDayFlag = !!alwaysDay;
     applyDayNight();
@@ -444,7 +475,10 @@ function wireEvents() {
       idleIntervalSec = interval;
       if (idleDirector) idleDirector.setAverageGapSeconds(interval);
     }
+    if (showOnboarding) setTimeout(startOnboarding, 1800);
   });
+
+  window.buddyAPI.onShowOnboarding(() => startOnboarding());
 
   window.buddyAPI.onCollarColorUpdate(({ beeCollarColor: collar }) => {
     if (!collar) return;

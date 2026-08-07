@@ -36,6 +36,9 @@
       "native/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "native/**/*"
+    ],
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "build/icon.png"
