@@ -223,8 +223,8 @@ html, body {
   pointer-events: none;
 }
 
-.wardrobe-pos-hat {
-  top: 32px;
+.wardrobe-pos-crown {
+  top: 8px;
   transform: translateX(-50%);
 }
 

@@ -79,14 +79,21 @@
       },
     },
     santaHat: {
-      w: 20,
+      // cssPos is 'crown' (top:8px), not the more head-hugging position tried first (top:26px):
+      // at that lower position, on some characters (citrus, bee, toast, croissant) the sprite's
+      // own canvas intermittently painted as if empty — confirmed via getImageData (pixel data
+      // was always correct) vs. the actual screenshot (body missing), a Chromium/software-
+      // rendering compositing artifact tied to Y-overlap with the character canvas's
+      // content-heavy region, not a logic bug. top:8px stays clear of that zone on every
+      // character while still sitting close to the head.
+      w: 16,
       h: 10,
-      cssPos: 'hat',
+      cssPos: 'crown',
       build(set) {
-        rect(set, 1, 1, 18, 5, '#d81e2c'); // main cone
-        rect(set, 4, 0, 15, 1, '#d81e2c'); // top taper
-        rect(set, 0, 5, 19, 8, '#ffffff'); // fur brim
-        circle(set, 17, 0, 3, '#ffffff'); // pompom, hanging off the top-right
+        rect(set, 1, 1, 14, 5, '#d81e2c'); // main cone
+        rect(set, 3, 0, 12, 1, '#d81e2c'); // top taper
+        rect(set, 0, 5, 15, 8, '#ffffff'); // fur brim
+        circle(set, 13, 0, 3, '#ffffff'); // pompom, hanging off the top-right
       },
     },
   };
