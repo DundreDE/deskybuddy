@@ -1,6 +1,6 @@
 {
   "name": "deskybuddy",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "DeskyBuddy — a cute chibi desktop pet that sits on your taskbar.",
   "private": true,
   "main": "main.js",
