@@ -18,6 +18,12 @@ try {
 } catch (err) {
   console.error('Buddy: active-win failed to load, fullscreen detection disabled', err);
 }
+let dbusNext = null;
+try {
+  dbusNext = require('dbus-next');
+} catch (err) {
+  console.error('Buddy: dbus-next failed to load, Linux music detection disabled', err);
+}
 
 // A stable, unique AppUserModelID. Without this, Windows registers the login-item entry
 // under the generic name of whatever electron.exe is running us (shows up as "Electron" in
@@ -54,12 +60,17 @@ const AFK_EVAL_MS = 15000;
 const AFK_THRESHOLD_MS = 4 * 60 * 1000; // no keyboard/mouse activity for this long -> afk overlay
 const FULLSCREEN_POLL_MS = 2000;
 const MEDIA_POLL_MS = 6000;
-// Packaged builds ship native/ inside app.asar, but powershell.exe reads real files, not the
-// virtual asar filesystem — asarUnpack (package.json) extracts native/ next to app.asar as
-// app.asar.unpacked, so redirect the path there when running packaged.
-const MEDIA_SCRIPT_PATH = app.isPackaged
-  ? path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'native', 'get-media-status.ps1')
-  : path.join(__dirname, 'native', 'get-media-status.ps1');
+// Packaged builds ship native/ inside app.asar, but the OS scripting hosts we shell out to
+// (powershell.exe, osascript) read real files, not the virtual asar filesystem — asarUnpack
+// (package.json) extracts native/ next to app.asar as app.asar.unpacked, so redirect there
+// when running packaged.
+function nativeScriptPath(filename) {
+  return app.isPackaged
+    ? path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'native', filename)
+    : path.join(__dirname, 'native', filename);
+}
+const WINDOWS_MEDIA_SCRIPT_PATH = nativeScriptPath('get-media-status.ps1');
+const MAC_MEDIA_SCRIPT_PATH = nativeScriptPath('get-media-status.applescript');
 const MULTI_MONITOR_POLL_MS = 2000;
 
 // Test-only overrides (see BUDDY_USER_DATA_DIR above) so the decay suite doesn't need to wait
@@ -95,6 +106,7 @@ const DEFAULT_SETTINGS = {
   language: 'auto', // 'auto' | 'de' | 'en' — see resolveLanguage()
   statsDecay: true,
   moodAffectsAnimations: true,
+  menuBarMode: false, // macOS only — anchors near the top menu bar instead of the Dock/bottom edge
 };
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -159,15 +171,33 @@ let currentDisplay = null;
 
 function getAnchorGeometryFor(display) {
   const { workArea } = display;
-  const taskbarTop = workArea.y + workArea.height;
-  const y = taskbarTop + FOOT_OVERLAP - WINDOW_HEIGHT;
   const minX = workArea.x;
   const maxX = workArea.x + workArea.width - WINDOW_WIDTH;
+  // menuBarMode (macOS only): anchor near the top of the work area — just below the menu bar —
+  // instead of the Dock/taskbar edge, with the sprite's top sinking FOOT_OVERLAP px up into the
+  // menu bar strip. Mirror image of the default bottom-anchor's "feet sink into the taskbar" look.
+  if (process.platform === 'darwin' && settings.menuBarMode) {
+    const y = workArea.y - FOOT_OVERLAP;
+    return { y, minX, maxX };
+  }
+  const taskbarTop = workArea.y + workArea.height;
+  const y = taskbarTop + FOOT_OVERLAP - WINDOW_HEIGHT;
   return { y, minX, maxX };
 }
 
 function getAnchorGeometry() {
   return getAnchorGeometryFor(currentDisplay || screen.getPrimaryDisplay());
+}
+
+// Repositions the window to the current anchor geometry's Y immediately, keeping X clamped
+// within the (possibly changed) roam bounds — used when menuBarMode is toggled live, same
+// "snap to the new geometry" idea as moveToDisplay() uses when following the active display.
+function snapToAnchor() {
+  if (!win || win.isDestroyed()) return;
+  const geo = getAnchorGeometry();
+  const bounds = win.getBounds();
+  const x = Math.max(geo.minX, Math.min(bounds.x, geo.maxX));
+  win.setPosition(x, geo.y);
 }
 
 // --- state persistence ---
@@ -584,9 +614,27 @@ function ensureUiohookStopped() {
   uiohookRunning = false;
 }
 
+// --- Wayland ---
+// uiohook-napi's Linux backend (libuiohook) only knows how to install a global input hook via
+// X11 — under a pure Wayland session (no XWayland input passthrough) it doesn't throw, it just
+// never receives events. That's not merely "typing detection silently does nothing": AFK
+// detection would flip to "away" after AFK_THRESHOLD_MS and then get stuck there forever, since
+// lastActivityAt never updates again either. active-win documents the same dead end for
+// fullscreen detection in its own README: "Wayland is not supported ... for security reasons."
+// Rather than let either limp along broken, detect a Wayland session up front and skip starting
+// them at all — settingsPayload()'s waylandLimited flag drives a warning banner in settings.html
+// explaining why, instead of the toggles just quietly doing nothing.
+function isWaylandSession() {
+  return process.platform === 'linux' && process.env.XDG_SESSION_TYPE === 'wayland';
+}
+
 // Called once at the end of applySettings(): the native hook stays running as long as *any*
 // of typing/afk detection is enabled, and stops the moment none of them need it.
 function refreshUiohookLifecycle() {
+  if (isWaylandSession()) {
+    ensureUiohookStopped();
+    return;
+  }
   const active = !powerSaveMode;
   const needed = active && (settings.typingDetection || settings.afkDetection);
   if (needed) ensureUiohookRunning(); else ensureUiohookStopped();
@@ -689,6 +737,7 @@ async function checkFullscreen() {
 
 function startFullscreenWatch() {
   if (!activeWin || fullscreenInterval) return;
+  if (isWaylandSession()) return; // active-win doesn't support Wayland — see isWaylandSession()
   fullscreenInterval = setInterval(checkFullscreen, FULLSCREEN_POLL_MS);
 }
 
@@ -764,35 +813,122 @@ function stopMultiMonitorWatch() {
   }
 }
 
-// --- music / media detection (Windows SMTC, via a small PowerShell helper) ---
+// --- music / media detection ---
+// Windows: SMTC via a small PowerShell helper (native/get-media-status.ps1) — sees any app
+// reporting "now playing" (Spotify, browsers, ...), no per-app setup needed.
+// Linux: MPRIS via the D-Bus session bus (dbus-next) — most media players (Spotify, browsers,
+// VLC, rhythmbox, ...) register an org.mpris.MediaPlayer2.* service automatically, no per-app
+// setup needed.
+// macOS: AppleScript helper (native/get-media-status.applescript) targeting Spotify and
+// Music.app specifically — see that file's header comment for why, and PLATFORM_SUPPORT.md for
+// the resulting coverage gap vs. Windows/Linux (no browser playback detection).
 
 let mediaInterval = null;
 let isMusicPlaying = false;
 let mediaCheckInFlight = false;
+let linuxSessionBus = null;
+// A session bus that fails once (no desktop session, no DBUS_SESSION_BUS_ADDRESS, ...) will
+// keep failing identically on every subsequent MEDIA_POLL_MS tick — retrying the connection is
+// still cheap and harmless (in case a session bus shows up later), but logging the same error
+// every 6s forever is not, so only the first failure gets a console.error.
+let linuxSessionBusErrorLogged = false;
+
+function getLinuxSessionBus() {
+  if (linuxSessionBus) return linuxSessionBus;
+  if (!dbusNext) return null;
+  try {
+    linuxSessionBus = dbusNext.sessionBus();
+    // A MessageBus is an EventEmitter — an unreachable/misconfigured session bus emits 'error'
+    // instead of throwing, and Node treats an 'error' event with no listener as an uncaught
+    // exception that kills the process.
+    linuxSessionBus.on('error', (err) => {
+      if (!linuxSessionBusErrorLogged) {
+        console.error('Buddy: D-Bus session bus error, Linux music detection disabled', err);
+        linuxSessionBusErrorLogged = true;
+      }
+      linuxSessionBus = null;
+    });
+  } catch (err) {
+    if (!linuxSessionBusErrorLogged) {
+      console.error('Buddy: could not connect to the D-Bus session bus, Linux music detection disabled', err);
+      linuxSessionBusErrorLogged = true;
+    }
+    linuxSessionBus = null;
+  }
+  return linuxSessionBus;
+}
+
+async function queryMediaPlayingStateLinux() {
+  const bus = getLinuxSessionBus();
+  if (!bus) return null;
+  try {
+    const dbusObj = await bus.getProxyObject('org.freedesktop.DBus', '/org/freedesktop/DBus');
+    const names = await dbusObj.getInterface('org.freedesktop.DBus').ListNames();
+    const playerNames = names.filter((n) => n.startsWith('org.mpris.MediaPlayer2.'));
+    for (const name of playerNames) {
+      try {
+        const playerObj = await bus.getProxyObject(name, '/org/mpris/MediaPlayer2');
+        const props = playerObj.getInterface('org.freedesktop.DBus.Properties');
+        const status = await props.Get('org.mpris.MediaPlayer2.Player', 'PlaybackStatus');
+        if (status && status.value === 'Playing') return true;
+      } catch {
+        // this one player didn't answer in time (mid-startup/shutdown, no Player interface
+        // yet, ...) — a single flaky player shouldn't block checking the rest.
+      }
+    }
+    return false; // one or more players present, none of them actively playing (or none at all)
+  } catch (err) {
+    console.error('Buddy: MPRIS query failed', err);
+    return null;
+  }
+}
+
+function queryMediaPlayingStateWindows() {
+  return new Promise((resolve) => {
+    // Without the mediaCheckInFlight guard around this call (see checkMedia()), a slow SMTC
+    // query — easy to trigger right after switching apps, since that changes which media
+    // session Windows has to enumerate — would still be running when the next 6s tick fires,
+    // piling up overlapping powershell.exe processes that starve the event loop.
+    execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', WINDOWS_MEDIA_SCRIPT_PATH], { timeout: 8000 }, (err, stdout) => {
+      if (err) { resolve(null); return; }
+      resolve((stdout || '').trim() === 'PLAYING');
+    });
+  });
+}
+
+function queryMediaPlayingStateMac() {
+  return new Promise((resolve) => {
+    execFile('osascript', [MAC_MEDIA_SCRIPT_PATH], { timeout: 8000 }, (err, stdout) => {
+      if (err) { resolve(null); return; }
+      resolve((stdout || '').trim() === 'PLAYING');
+    });
+  });
+}
+
+function queryMediaPlayingState() {
+  if (process.platform === 'win32') return queryMediaPlayingStateWindows();
+  if (process.platform === 'linux') return queryMediaPlayingStateLinux();
+  if (process.platform === 'darwin') return queryMediaPlayingStateMac();
+  return Promise.resolve(null);
+}
 
 function checkMedia() {
-  // Without this guard, a slow SMTC query (easy to trigger right after switching apps,
-  // since that changes which media session Windows has to enumerate) would still be
-  // running when the next 6s tick fires — piling up overlapping powershell.exe processes
-  // that starve the event loop and make every other timer (idle animations included)
-  // fall further and further behind the longer the app runs.
   if (mediaCheckInFlight) return;
   mediaCheckInFlight = true;
-  execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', MEDIA_SCRIPT_PATH], { timeout: 8000 }, (err, stdout) => {
-    mediaCheckInFlight = false;
-    if (err) return;
-    const playing = (stdout || '').trim() === 'PLAYING';
-    if (playing !== isMusicPlaying) {
-      isMusicPlaying = playing;
-      if (win && !win.isDestroyed()) win.webContents.send('context-update', { music: isMusicPlaying });
-    }
-  });
+  queryMediaPlayingState()
+    .then((playing) => {
+      mediaCheckInFlight = false;
+      if (playing === null) return; // couldn't determine this tick — leave state as-is
+      if (playing !== isMusicPlaying) {
+        isMusicPlaying = playing;
+        if (win && !win.isDestroyed()) win.webContents.send('context-update', { music: isMusicPlaying });
+      }
+    })
+    .catch(() => { mediaCheckInFlight = false; });
 }
 
 function startMediaWatch() {
   if (mediaInterval) return;
-  // The helper script shells out to powershell.exe (Windows SMTC) — nothing to poll elsewhere.
-  if (process.platform !== 'win32') return;
   mediaInterval = setInterval(checkMedia, MEDIA_POLL_MS);
   checkMedia();
 }
@@ -805,6 +941,17 @@ function stopMediaWatch() {
   if (isMusicPlaying) {
     isMusicPlaying = false;
     if (win && !win.isDestroyed()) win.webContents.send('context-update', { music: false });
+  }
+}
+
+function disconnectLinuxSessionBus() {
+  if (linuxSessionBus) {
+    try {
+      linuxSessionBus.disconnect();
+    } catch {
+      // already gone
+    }
+    linuxSessionBus = null;
   }
 }
 
@@ -1127,10 +1274,11 @@ ipcMain.on('sleep-state-changed', (_event, { sleeping }) => {
 
 ipcMain.handle('load-state', async () => state);
 
-// autostartBlockedByOS is derived (re-checked on every applySettings()), not part of the
-// persisted settings file — merged in here purely for the settings window to display.
+// autostartBlockedByOS/isMac/waylandLimited are derived, not part of the persisted settings
+// file — merged in here purely for the settings window to display (isMac gates the menuBarMode
+// option's visibility; waylandLimited drives a warning banner about typing/afk/fullscreen detection).
 function settingsPayload() {
-  return { ...settings, autostartBlockedByOS };
+  return { ...settings, autostartBlockedByOS, isMac: process.platform === 'darwin', waylandLimited: isWaylandSession() };
 }
 
 ipcMain.handle('load-settings', async () => settingsPayload());
@@ -1139,10 +1287,16 @@ ipcMain.on('save-settings', (_event, { settings: newSettings }) => {
   const characterChanged = newSettings.character && newSettings.character !== settings.character;
   const collarChanged = newSettings.beeCollarColor && newSettings.beeCollarColor !== settings.beeCollarColor;
   const languageChanged = newSettings.language !== undefined && newSettings.language !== settings.language;
+  const menuBarModeChanged = newSettings.menuBarMode !== undefined && newSettings.menuBarMode !== settings.menuBarMode;
   settings = { ...settings, ...newSettings };
   saveSettingsToDisk();
   applySettings();
   if (languageChanged && tray) tray.setContextMenu(buildMenu());
+  if (menuBarModeChanged) {
+    snapToAnchor();
+    clearRoamTimers();
+    maybeScheduleRoam();
+  }
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings-updated', settingsPayload());
   if (win && !win.isDestroyed()) {
     win.webContents.send('day-mode-updated', { alwaysDay: settings.alwaysDay });
@@ -1191,6 +1345,7 @@ app.on('before-quit', async () => {
   ensureUiohookStopped();
   stopFullscreenWatch();
   stopMediaWatch();
+  disconnectLinuxSessionBus();
   stopCursorLook();
   stopMultiMonitorWatch();
   stopStatsDecay();

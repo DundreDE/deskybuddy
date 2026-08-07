@@ -166,6 +166,8 @@
       .warning-banner { background: #3a331a; border-color: #6b5215; color: #f0d998; }
     }
     .warning-banner.visible { display: block; }
+    .mac-only { display: none; }
+    .mac-only.visible { display: flex; }
     select.lang-select {
       background: var(--card);
       color: var(--fg);
@@ -179,6 +181,10 @@
 <body>
   <h1 data-i18n="settings.windowTitle">DeskyBuddy – Einstellungen</h1>
   <p class="hint" data-i18n="settings.hint">Änderungen wirken sofort.</p>
+
+  <div class="warning-banner" id="waylandWarning" data-i18n="settings.waylandWarning">
+    ⚠️ Wayland-Sitzung erkannt: Tipp-Erkennung, Abwesenheits-Erkennung und Ausblenden bei Vollbild-Spielen funktionieren unter Wayland technisch nicht und bleiben deaktiviert.
+  </div>
 
   <div class="option">
     <div class="text">
@@ -314,6 +320,14 @@
       <div class="desc" data-i18n="settings.moodAffectsAnimations.desc">Manche Idle-Animationen erscheinen nur, wenn DeskyBuddy gerade besonders gut gelaunt, mürrisch oder hungrig ist.</div>
     </div>
     <label class="switch"><input type="checkbox" id="moodAffectsAnimations" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option mac-only" id="menuBarModeOption">
+    <div class="text">
+      <div class="title" data-i18n="settings.menuBarMode.title">Menüleisten-Modus</div>
+      <div class="desc" data-i18n="settings.menuBarMode.desc">DeskyBuddy hängt an der Menüleiste oben, statt am Dock-Bereich unten zu laufen.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="menuBarMode" /><span class="slider"></span></label>
   </div>
 
   <script src="settings.js"></script>

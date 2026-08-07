@@ -35,7 +35,7 @@ chmod +x DeskyBuddy-*.AppImage
 - Folgt dem aktiven Monitor bei Mehrfachbildschirm-Setups
 - Alle Erkennungs-Features sind pro Toggle in den Einstellungen (Tray-Icon → Rechtsklick) abschaltbar, inkl. Energiesparmodus, der alles temporär pausiert
 
-Windows hat aktuell den vollsten Funktionsumfang (u. a. Musik-Erkennung über die Windows SMTC-API via PowerShell) — dieses eine Feature ist auf macOS/Linux nicht verfügbar, alles andere läuft plattformübergreifend.
+Windows hat weiterhin den vollsten Funktionsumfang, aber seit v0.6 laufen Musik-Erkennung (Linux via MPRIS, macOS via Spotify/Music.app), Tipp-/Abwesenheits-/Vollbild-Erkennung (außer unter Wayland) und ein macOS-Menüleisten-Modus ebenfalls plattformübergreifend. Details, Einschränkungen und was (noch) ungetestet ist: [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md).
 
 ## Entwicklung
 

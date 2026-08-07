@@ -100,7 +100,12 @@
     "moodAffectsAnimations": {
       "title": "Mood affects animations",
       "desc": "Some idle animations only show up when DeskyBuddy is especially happy, grumpy, or hungry."
-    }
+    },
+    "menuBarMode": {
+      "title": "Menu bar mode",
+      "desc": "DeskyBuddy hangs from the menu bar at the top instead of roaming the Dock area at the bottom."
+    },
+    "waylandWarning": "⚠️ Wayland session detected: typing detection, away detection, and hiding during fullscreen games don't work under Wayland and stay disabled."
   },
   "character": {
     "crab": "Crab",

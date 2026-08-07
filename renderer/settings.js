@@ -1,4 +1,4 @@
-const fields = ['autostart', 'mouseLook', 'typingDetection', 'musicDetection', 'afkDetection', 'multiMonitorFollow', 'hideFullscreen', 'alwaysDay', 'statsDecay', 'moodAffectsAnimations'];
+const fields = ['autostart', 'mouseLook', 'typingDetection', 'musicDetection', 'afkDetection', 'multiMonitorFollow', 'hideFullscreen', 'alwaysDay', 'statsDecay', 'moodAffectsAnimations', 'menuBarMode'];
 const rangeFields = ['idleIntervalSec'];
 const CHARACTERS = [
   { value: 'crab', emoji: '🦀' },
@@ -66,6 +66,10 @@ function applyToForm(settings) {
   updateIdleIntervalLabel(document.getElementById('idleIntervalSec').value);
   const warning = document.getElementById('autostartWarning');
   if (warning) warning.classList.toggle('visible', !!settings.autostart && !!settings.autostartBlockedByOS);
+  const menuBarModeOption = document.getElementById('menuBarModeOption');
+  if (menuBarModeOption) menuBarModeOption.classList.toggle('visible', !!settings.isMac);
+  const waylandWarning = document.getElementById('waylandWarning');
+  if (waylandWarning) waylandWarning.classList.toggle('visible', !!settings.waylandLimited);
   const character = settings.character || 'crab';
   const idx = CHARACTERS.findIndex((c) => c.value === character);
   characterIndex = idx >= 0 ? idx : 0;

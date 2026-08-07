@@ -100,7 +100,12 @@
     "moodAffectsAnimations": {
       "title": "Laune beeinflusst Animationen",
       "desc": "Manche Idle-Animationen erscheinen nur, wenn DeskyBuddy gerade besonders gut gelaunt, mürrisch oder hungrig ist."
-    }
+    },
+    "menuBarMode": {
+      "title": "Menüleisten-Modus",
+      "desc": "DeskyBuddy hängt an der Menüleiste oben, statt am Dock-Bereich unten zu laufen."
+    },
+    "waylandWarning": "⚠️ Wayland-Sitzung erkannt: Tipp-Erkennung, Abwesenheits-Erkennung und Ausblenden bei Vollbild-Spielen funktionieren unter Wayland technisch nicht und bleiben deaktiviert."
   },
   "character": {
     "crab": "Krabbe",

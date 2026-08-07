@@ -162,6 +162,26 @@ test('stats decay stays off when the statsDecay setting is disabled', async () =
   expect(happiness).toBe(80);
 });
 
+test('a Wayland session shows the settings warning banner and disables affected watchers', async () => {
+  await electronApp.close();
+
+  electronApp = await electron.launch({
+    args: [APP_ROOT, '--no-sandbox'],
+    env: { ...process.env, BUDDY_USER_DATA_DIR: userDataDir, XDG_SESSION_TYPE: 'wayland' },
+  });
+  const window = await electronApp.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('open-settings');
+  });
+  const settingsWindow = await electronApp.waitForEvent('window', (w) => w.url().includes('settings.html'));
+  await settingsWindow.waitForLoadState('domcontentloaded');
+
+  await expect(settingsWindow.locator('#waylandWarning')).toBeVisible();
+  await expect(settingsWindow.locator('#waylandWarning')).toHaveText(/Wayland/);
+});
+
 test('dragging the sprite past the threshold enters the DRAGGING state', async () => {
   const window = await electronApp.firstWindow();
   await window.waitForLoadState('domcontentloaded');
