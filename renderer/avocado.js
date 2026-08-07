@@ -3,6 +3,8 @@
 // pixelated) for a crisp 16-bit / retro sprite look. Original character design (own silhouette,
 // own palette) — not a reproduction of any existing artwork. No external art assets.
 (function () {
+const { inEllipse, createGrid, computeOutlineCells, createSpriteCanvas, attachStandardSetters } = window.CharacterBase;
+
 const GRID_W = 22;
 const GRID_H = 26;
 const PIXEL = 5; // on-screen size of one sprite pixel, in real CSS px
@@ -43,18 +45,8 @@ const SILHOUETTE_CATEGORIES = new Set(['skin', 'flesh', 'pit', 'leg']);
 const LEFT_LEG_X = [8, 9];
 const RIGHT_LEG_X = [13, 14];
 
-function inEllipse(px, py, cx, cy, rx, ry) {
-  const dx = (px + 0.5 - cx) / rx;
-  const dy = (py + 0.5 - cy) / ry;
-  return dx * dx + dy * dy <= 1;
-}
-
 function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY = 0, headphones, core = {} }) {
-  const grid = Array.from({ length: GRID_H }, () => new Array(GRID_W).fill(null));
-  const set = (x, y, category) => {
-    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
-    grid[y][x] = category;
-  };
+  const { grid, set } = createGrid(GRID_W, GRID_H);
 
   // outer rind, inset flesh, and the pit sitting in the middle of the fruit
   for (let y = 0; y < GRID_H; y++) {
@@ -96,20 +88,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
   }
 
   // ink outline: any silhouette pixel touching transparent space
-  const outlineCells = [];
-  for (let y = 0; y < GRID_H; y++) {
-    for (let x = 0; x < GRID_W; x++) {
-      const cat = grid[y][x];
-      if (!cat || !SILHOUETTE_CATEGORIES.has(cat)) continue;
-      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
-      const touchesEmpty = neighbors.some(([nx, ny]) => {
-        if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) return true;
-        return !grid[ny][nx];
-      });
-      if (touchesEmpty) outlineCells.push([x, y]);
-    }
-  }
-  outlineCells.forEach(([x, y]) => set(x, y, 'outline'));
+  computeOutlineCells(grid, GRID_W, GRID_H, SILHOUETTE_CATEGORIES).forEach(([x, y]) => set(x, y, 'outline'));
 
   // stitched face, on the flesh above the pit, painted last so it always stays visible.
   // Each eye is only 2 columns x 2 rows, so lookX/lookY (-1/0/1) collapse to the
@@ -180,11 +159,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
 }
 
 function createAvocadoSprite() {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'dragon-canvas';
-  canvas.width = GRID_W;
-  canvas.height = GRID_H;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createSpriteCanvas(GRID_W, GRID_H);
 
   const state = {
     blinking: false,
@@ -214,21 +189,12 @@ function createAvocadoSprite() {
 
   draw();
 
-  return {
-    canvas,
-    width: GRID_W * PIXEL,
-    height: GRID_H * PIXEL,
-    setBlinking(value) { state.blinking = value; draw(); },
-    setMouthOpen(value) { state.mouthOpen = value; draw(); },
-    setLegPhase(value) { state.legPhase = value; draw(); },
-    setStanding(value) { state.standing = value; draw(); },
-    setPalette(name) { state.palette = name; draw(); },
-    setLook(lookX, lookY) { state.lookX = lookX; state.lookY = lookY; draw(); },
-    setHeadphones(value) { state.headphones = value; draw(); },
-    // core: { dx, dy, scaleX, scaleY, hidden } — partial updates merge onto current core state.
-    setCore(partial) { state.core = { ...state.core, ...partial }; draw(); },
-    resetCore() { state.core = {}; draw(); },
-  };
+  const api = { canvas, width: GRID_W * PIXEL, height: GRID_H * PIXEL };
+  attachStandardSetters(api, state, draw);
+  // core: { dx, dy, scaleX, scaleY, hidden } — partial updates merge onto current core state.
+  api.setCore = (partial) => { state.core = { ...state.core, ...partial }; draw(); };
+  api.resetCore = () => { state.core = {}; draw(); };
+  return api;
 }
 
 window.PixelAvocado = { create: createAvocadoSprite, PIXEL, GRID_W, GRID_H };

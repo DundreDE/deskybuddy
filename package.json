@@ -1,20 +1,28 @@
 {
   "name": "deskybuddy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "DeskyBuddy — a cute chibi desktop pet that sits on your taskbar.",
   "private": true,
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "icon": "node scripts/generate-icon.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dist": "electron-builder --win --linux",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",
     "dist:mac": "electron-builder --mac"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "electron": "^32.0.0",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.9.0",
+    "prettier": "^3.9.6"
   },
   "dependencies": {
     "active-win": "^8.2.1",

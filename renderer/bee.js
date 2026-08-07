@@ -10,6 +10,8 @@
 // configurable per settings (setCollarColor). Original character design (own silhouette, own
 // palette) — not a reproduction of any existing artwork. No external art assets.
 (function () {
+const { inEllipse, createGrid, computeOutlineCells, createSpriteCanvas, attachStandardSetters } = window.CharacterBase;
+
 const GRID_W = 24;
 const GRID_H = 28;
 const PIXEL = 5; // on-screen size of one sprite pixel, in real CSS px
@@ -74,18 +76,8 @@ const RIGHT_LEG_X = [13, 14];
 const COLLAR_ROWS = [11, 12];
 const COLLAR_KNOT = [[11, 13], [12, 13], [11, 14], [12, 14]];
 
-function inEllipse(px, py, cx, cy, rx, ry) {
-  const dx = (px + 0.5 - cx) / rx;
-  const dy = (py + 0.5 - cy) / ry;
-  return dx * dx + dy * dy <= 1;
-}
-
 function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY = 0, headphones, collarColor }) {
-  const grid = Array.from({ length: GRID_H }, () => new Array(GRID_W).fill(null));
-  const set = (x, y, category) => {
-    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
-    grid[y][x] = category;
-  };
+  const { grid, set } = createGrid(GRID_W, GRID_H);
   const mirror = (x) => GRID_W - 1 - x;
 
   // wings on the back, painted first so the body covers their attachment point and only the
@@ -133,20 +125,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
   }
 
   // ink outline: any silhouette pixel touching transparent space
-  const outlineCells = [];
-  for (let y = 0; y < GRID_H; y++) {
-    for (let x = 0; x < GRID_W; x++) {
-      const cat = grid[y][x];
-      if (!cat || !SILHOUETTE_CATEGORIES.has(cat)) continue;
-      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
-      const touchesEmpty = neighbors.some(([nx, ny]) => {
-        if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) return true;
-        return !grid[ny][nx];
-      });
-      if (touchesEmpty) outlineCells.push([x, y]);
-    }
-  }
-  outlineCells.forEach(([x, y]) => set(x, y, 'outline'));
+  computeOutlineCells(grid, GRID_W, GRID_H, SILHOUETTE_CATEGORIES).forEach(([x, y]) => set(x, y, 'outline'));
 
   // stitched face, on the yellow head band, painted last so it always stays visible. Each eye is
   // only 2 columns x 2 rows, so lookX/lookY (-1/0/1) collapse to the two available slots, same
@@ -219,11 +198,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
 }
 
 function createBeeSprite() {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'dragon-canvas';
-  canvas.width = GRID_W;
-  canvas.height = GRID_H;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createSpriteCanvas(GRID_W, GRID_H);
 
   const state = {
     blinking: false,
@@ -254,19 +229,10 @@ function createBeeSprite() {
 
   draw();
 
-  return {
-    canvas,
-    width: GRID_W * PIXEL,
-    height: GRID_H * PIXEL,
-    setBlinking(value) { state.blinking = value; draw(); },
-    setMouthOpen(value) { state.mouthOpen = value; draw(); },
-    setLegPhase(value) { state.legPhase = value; draw(); },
-    setStanding(value) { state.standing = value; draw(); },
-    setPalette(name) { state.palette = name; draw(); },
-    setLook(lookX, lookY) { state.lookX = lookX; state.lookY = lookY; draw(); },
-    setHeadphones(value) { state.headphones = value; draw(); },
-    setCollarColor(hex) { state.collarColor = hex || DEFAULT_COLLAR; draw(); },
-  };
+  const api = { canvas, width: GRID_W * PIXEL, height: GRID_H * PIXEL };
+  attachStandardSetters(api, state, draw);
+  api.setCollarColor = (hex) => { state.collarColor = hex || DEFAULT_COLLAR; draw(); };
+  return api;
 }
 
 window.PixelBee = { create: createBeeSprite, PIXEL, GRID_W, GRID_H, DEFAULT_COLLAR };

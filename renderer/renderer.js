@@ -89,7 +89,7 @@ function createLaptopAccessory() {
 }
 
 const SPRITE_MODULES = {
-  crab: window.PixelDragon,
+  crab: window.PixelCrab,
   avocado: window.PixelAvocado,
   citrus: window.PixelCitrus,
   bee: window.PixelBee,
@@ -164,7 +164,6 @@ function stopAfkZzz() {
 let currentState = 'IDLE';
 let sleeping = false;
 let forceNight = false;
-let petState = null;
 let lastInteractionAt = Date.now();
 
 let dragCandidate = null;
@@ -653,7 +652,6 @@ function init() {
   }, LEG_STEP_MS);
 
   window.buddyAPI.loadState().then((s) => {
-    petState = s;
     if (s && s.fullness < 30) {
       setTimeout(() => queueSpeech('Ich hab ein bisschen Hunger...'), 2000);
     }

@@ -8,6 +8,8 @@
 // pit/eye element). Original character design (own silhouette, own palette) — not a
 // reproduction of any existing artwork. No external art assets.
 (function () {
+const { inCircle, createGrid, computeOutlineCells, createSpriteCanvas, attachStandardSetters } = window.CharacterBase;
+
 const GRID_W = 24;
 const GRID_H = 24;
 const PIXEL = 5; // on-screen size of one sprite pixel, in real CSS px
@@ -53,18 +55,8 @@ const LEG_ATTACH_Y = 15; // just inside the curve's lowest reach at these leg co
 const LEFT_LEG_X = [9, 10];
 const RIGHT_LEG_X = [13, 14];
 
-function inCircle(px, py, cx, cy, r) {
-  const dx = px + 0.5 - cx;
-  const dy = py + 0.5 - cy;
-  return dx * dx + dy * dy <= r * r;
-}
-
 function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY = 0, headphones }) {
-  const grid = Array.from({ length: GRID_H }, () => new Array(GRID_W).fill(null));
-  const set = (x, y, category) => {
-    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
-    grid[y][x] = category;
-  };
+  const { grid, set } = createGrid(GRID_W, GRID_H);
 
   // white pith ring around the curved edge, then yellow flesh inset — both clipped to the
   // bottom half of the circle so the fruit "sits" on its curve, flat cut edge up top
@@ -92,20 +84,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
   }
 
   // ink outline: any silhouette pixel touching transparent space
-  const outlineCells = [];
-  for (let y = 0; y < GRID_H; y++) {
-    for (let x = 0; x < GRID_W; x++) {
-      const cat = grid[y][x];
-      if (!cat || !SILHOUETTE_CATEGORIES.has(cat)) continue;
-      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
-      const touchesEmpty = neighbors.some(([nx, ny]) => {
-        if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) return true;
-        return !grid[ny][nx];
-      });
-      if (touchesEmpty) outlineCells.push([x, y]);
-    }
-  }
-  outlineCells.forEach(([x, y]) => set(x, y, 'outline'));
+  computeOutlineCells(grid, GRID_W, GRID_H, SILHOUETTE_CATEGORIES).forEach(([x, y]) => set(x, y, 'outline'));
 
   // stitched face, on the flesh, painted last so it always stays visible
   const colOffset = lookX > 0 ? 1 : 0;
@@ -160,11 +139,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
 }
 
 function createCitrusSprite() {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'dragon-canvas';
-  canvas.width = GRID_W;
-  canvas.height = GRID_H;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createSpriteCanvas(GRID_W, GRID_H);
 
   const state = {
     blinking: false,
@@ -193,18 +168,9 @@ function createCitrusSprite() {
 
   draw();
 
-  return {
-    canvas,
-    width: GRID_W * PIXEL,
-    height: GRID_H * PIXEL,
-    setBlinking(value) { state.blinking = value; draw(); },
-    setMouthOpen(value) { state.mouthOpen = value; draw(); },
-    setLegPhase(value) { state.legPhase = value; draw(); },
-    setStanding(value) { state.standing = value; draw(); },
-    setPalette(name) { state.palette = name; draw(); },
-    setLook(lookX, lookY) { state.lookX = lookX; state.lookY = lookY; draw(); },
-    setHeadphones(value) { state.headphones = value; draw(); },
-  };
+  const api = { canvas, width: GRID_W * PIXEL, height: GRID_H * PIXEL };
+  attachStandardSetters(api, state, draw);
+  return api;
 }
 
 window.PixelCitrus = { create: createCitrusSprite, PIXEL, GRID_W, GRID_H };

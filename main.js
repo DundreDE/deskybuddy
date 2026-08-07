@@ -165,7 +165,7 @@ async function loadStateFromDisk() {
     const raw = await fs.promises.readFile(STATE_PATH, 'utf-8');
     const parsed = JSON.parse(raw);
     state = { ...DEFAULT_STATE, ...parsed };
-  } catch (err) {
+  } catch {
     state = { ...DEFAULT_STATE };
   }
 }
@@ -197,7 +197,7 @@ async function loadSettingsFromDisk() {
     const raw = await fs.promises.readFile(SETTINGS_PATH, 'utf-8');
     const parsed = JSON.parse(raw);
     settings = { ...DEFAULT_SETTINGS, ...parsed };
-  } catch (err) {
+  } catch {
     settings = { ...DEFAULT_SETTINGS };
   }
 }
@@ -496,7 +496,7 @@ function ensureUiohookStopped() {
   if (!uiohookRunning) return;
   try {
     uIOhook.stop();
-  } catch (err) {
+  } catch {
     // already stopped
   }
   uiohookRunning = false;
@@ -600,7 +600,7 @@ async function checkFullscreen() {
     // poll tick instead of relying solely on the slow REALIGN_INTERVAL_MS self-heal,
     // otherwise buddy stays sunk behind the taskbar until that timer fires.
     if (!hiddenForFullscreen) win.setAlwaysOnTop(true, 'screen-saver');
-  } catch (err) {
+  } catch {
     // transient failures (permissions, no active window) — fail open, stay visible
   }
 }
@@ -658,7 +658,7 @@ async function checkMultiMonitor() {
       try {
         const active = await activeWin();
         if (active && active.bounds) targetDisplay = screen.getDisplayMatching(active.bounds);
-      } catch (err) {
+      } catch {
         // fall through to the cursor-based fallback below
       }
     }

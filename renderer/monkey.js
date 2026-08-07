@@ -9,6 +9,8 @@
 // torso instead of floating bars next to it. Original character design (own silhouette, own
 // palette) — not a reproduction of any existing artwork/toy. No external art assets.
 (function () {
+const { inEllipse, createGrid, computeOutlineCells, createSpriteCanvas, attachStandardSetters } = window.CharacterBase;
+
 const GRID_W = 24;
 const GRID_H = 28;
 const PIXEL = 5; // on-screen size of one sprite pixel, in real CSS px
@@ -68,22 +70,12 @@ const ARM_TOP_Y = 14;
 const ARM_BOTTOM_Y = 21;
 const LEFT_HAND = { cx: 5.5, cy: 21, r: 1.6 };
 
-function inEllipse(px, py, cx, cy, rx, ry) {
-  const dx = (px + 0.5 - cx) / rx;
-  const dy = (py + 0.5 - cy) / ry;
-  return dx * dx + dy * dy <= 1;
-}
-
 function mirrorX(x) {
   return GRID_W - 1 - x;
 }
 
 function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY = 0, headphones }) {
-  const grid = Array.from({ length: GRID_H }, () => new Array(GRID_W).fill(null));
-  const set = (x, y, category) => {
-    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
-    grid[y][x] = category;
-  };
+  const { grid, set } = createGrid(GRID_W, GRID_H);
 
   // body, painted before the arms so the arms visibly rest against/over the torso instead of
   // floating next to it
@@ -156,20 +148,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
   for (const x of RIGHT_LEG_X) set(x, 27, 'sole');
 
   // ink outline: any silhouette pixel touching transparent space
-  const outlineCells = [];
-  for (let y = 0; y < GRID_H; y++) {
-    for (let x = 0; x < GRID_W; x++) {
-      const cat = grid[y][x];
-      if (!cat || !SILHOUETTE_CATEGORIES.has(cat)) continue;
-      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
-      const touchesEmpty = neighbors.some(([nx, ny]) => {
-        if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) return true;
-        return !grid[ny][nx];
-      });
-      if (touchesEmpty) outlineCells.push([x, y]);
-    }
-  }
-  outlineCells.forEach(([x, y]) => set(x, y, 'outline'));
+  computeOutlineCells(grid, GRID_W, GRID_H, SILHOUETTE_CATEGORIES).forEach(([x, y]) => set(x, y, 'outline'));
 
   // big embroidered eyes, painted last so they always stay visible. lookX/lookY (-1/0/1) shift
   // a small white shine pixel inside the otherwise solid black eye.
@@ -222,11 +201,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
 }
 
 function createMonkeySprite() {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'dragon-canvas';
-  canvas.width = GRID_W;
-  canvas.height = GRID_H;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createSpriteCanvas(GRID_W, GRID_H);
 
   const state = {
     blinking: false,
@@ -255,18 +230,9 @@ function createMonkeySprite() {
 
   draw();
 
-  return {
-    canvas,
-    width: GRID_W * PIXEL,
-    height: GRID_H * PIXEL,
-    setBlinking(value) { state.blinking = value; draw(); },
-    setMouthOpen(value) { state.mouthOpen = value; draw(); },
-    setLegPhase(value) { state.legPhase = value; draw(); },
-    setStanding(value) { state.standing = value; draw(); },
-    setPalette(name) { state.palette = name; draw(); },
-    setLook(lookX, lookY) { state.lookX = lookX; state.lookY = lookY; draw(); },
-    setHeadphones(value) { state.headphones = value; draw(); },
-  };
+  const api = { canvas, width: GRID_W * PIXEL, height: GRID_H * PIXEL };
+  attachStandardSetters(api, state, draw);
+  return api;
 }
 
 window.PixelMonkey = { create: createMonkeySprite, PIXEL, GRID_W, GRID_H };

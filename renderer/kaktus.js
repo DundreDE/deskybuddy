@@ -5,6 +5,8 @@
 // top, and two short legs poking out beneath the pot. Original character design (own silhouette,
 // own palette) — not a reproduction of any existing artwork. No external art assets.
 (function () {
+const { inEllipse, createGrid, computeOutlineCells, createSpriteCanvas, attachStandardSetters } = window.CharacterBase;
+
 const GRID_W = 22;
 const GRID_H = 26;
 const PIXEL = 5; // on-screen size of one sprite pixel, in real CSS px
@@ -50,18 +52,8 @@ const RIGHT_LEG_X = [13, 14];
 const SPINE_SPOTS = [[5, 8], [16, 8], [6, 14], [15, 14], [8, 5], [13, 5], [7, 18], [14, 18]];
 const LEFT_FLOWER = [[9, 0], [10, 0], [8, 1], [9, 1], [10, 1], [11, 1], [9, 2], [10, 2]];
 
-function inEllipse(px, py, cx, cy, rx, ry) {
-  const dx = (px + 0.5 - cx) / rx;
-  const dy = (py + 0.5 - cy) / ry;
-  return dx * dx + dy * dy <= 1;
-}
-
 function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY = 0, headphones }) {
-  const grid = Array.from({ length: GRID_H }, () => new Array(GRID_W).fill(null));
-  const set = (x, y, category) => {
-    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
-    grid[y][x] = category;
-  };
+  const { grid, set } = createGrid(GRID_W, GRID_H);
 
   // round cactus body
   for (let y = 0; y < GRID_H; y++) {
@@ -93,20 +85,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
   }
 
   // ink outline: any silhouette pixel touching transparent space
-  const outlineCells = [];
-  for (let y = 0; y < GRID_H; y++) {
-    for (let x = 0; x < GRID_W; x++) {
-      const cat = grid[y][x];
-      if (!cat || !SILHOUETTE_CATEGORIES.has(cat)) continue;
-      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
-      const touchesEmpty = neighbors.some(([nx, ny]) => {
-        if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) return true;
-        return !grid[ny][nx];
-      });
-      if (touchesEmpty) outlineCells.push([x, y]);
-    }
-  }
-  outlineCells.forEach(([x, y]) => set(x, y, 'outline'));
+  computeOutlineCells(grid, GRID_W, GRID_H, SILHOUETTE_CATEGORIES).forEach(([x, y]) => set(x, y, 'outline'));
 
   // stitched face, painted last so it always stays visible
   const colOffset = lookX > 0 ? 1 : 0;
@@ -170,11 +149,7 @@ function buildFrame({ blinking, mouthOpen, legPhase, standing, lookX = 0, lookY 
 }
 
 function createKaktusSprite() {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'dragon-canvas';
-  canvas.width = GRID_W;
-  canvas.height = GRID_H;
-  const ctx = canvas.getContext('2d');
+  const { canvas, ctx } = createSpriteCanvas(GRID_W, GRID_H);
 
   const state = {
     blinking: false,
@@ -203,18 +178,9 @@ function createKaktusSprite() {
 
   draw();
 
-  return {
-    canvas,
-    width: GRID_W * PIXEL,
-    height: GRID_H * PIXEL,
-    setBlinking(value) { state.blinking = value; draw(); },
-    setMouthOpen(value) { state.mouthOpen = value; draw(); },
-    setLegPhase(value) { state.legPhase = value; draw(); },
-    setStanding(value) { state.standing = value; draw(); },
-    setPalette(name) { state.palette = name; draw(); },
-    setLook(lookX, lookY) { state.lookX = lookX; state.lookY = lookY; draw(); },
-    setHeadphones(value) { state.headphones = value; draw(); },
-  };
+  const api = { canvas, width: GRID_W * PIXEL, height: GRID_H * PIXEL };
+  attachStandardSetters(api, state, draw);
+  return api;
 }
 
 window.PixelKaktus = { create: createKaktusSprite, PIXEL, GRID_W, GRID_H };
