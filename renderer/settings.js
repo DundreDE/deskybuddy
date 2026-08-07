@@ -1,7 +1,28 @@
 const fields = ['autostart', 'mouseLook', 'typingDetection', 'musicDetection', 'afkDetection', 'multiMonitorFollow', 'hideFullscreen', 'alwaysDay'];
 const rangeFields = ['idleIntervalSec'];
-const characters = ['crab', 'avocado', 'citrus', 'bee'];
+const CHARACTERS = [
+  { value: 'crab', emoji: '🦀', name: 'Krabbe' },
+  { value: 'avocado', emoji: '🥑', name: 'Avocado' },
+  { value: 'citrus', emoji: '🍋', name: 'Zitrusscheibe' },
+  { value: 'bee', emoji: '🐝', name: 'Biene' },
+  { value: 'monkey', emoji: '🐒', name: 'Affe' },
+];
+let characterIndex = 0;
 let beeCollarColor = '#8fd6ff';
+
+function renderCharacter() {
+  const current = CHARACTERS[characterIndex];
+  const emojiEl = document.getElementById('characterEmoji');
+  const nameEl = document.getElementById('characterName');
+  if (emojiEl) emojiEl.textContent = current.emoji;
+  if (nameEl) nameEl.textContent = current.name;
+  const gearBtn = document.getElementById('beeGearBtn');
+  if (gearBtn) gearBtn.classList.toggle('visible', current.value === 'bee');
+  if (current.value !== 'bee') {
+    const collarPicker = document.getElementById('collarPicker');
+    if (collarPicker) collarPicker.classList.remove('visible');
+  }
+}
 
 function updateIdleIntervalLabel(value) {
   const label = document.getElementById('idleIntervalLabel');
@@ -21,10 +42,9 @@ function applyToForm(settings) {
   const warning = document.getElementById('autostartWarning');
   if (warning) warning.classList.toggle('visible', !!settings.autostart && !!settings.autostartBlockedByOS);
   const character = settings.character || 'crab';
-  characters.forEach((value) => {
-    const el = document.getElementById(`character-${value}`);
-    if (el) el.checked = value === character;
-  });
+  const idx = CHARACTERS.findIndex((c) => c.value === character);
+  characterIndex = idx >= 0 ? idx : 0;
+  renderCharacter();
   beeCollarColor = settings.beeCollarColor || beeCollarColor;
   document.querySelectorAll('.collar-swatch').forEach((el) => {
     el.classList.toggle('selected', el.dataset.color === beeCollarColor);
@@ -41,8 +61,7 @@ function readForm() {
     const el = document.getElementById(key);
     if (el) settings[key] = Number(el.value);
   });
-  const checked = document.querySelector('input[name="character"]:checked');
-  settings.character = checked ? checked.value : 'crab';
+  settings.character = CHARACTERS[characterIndex].value;
   settings.beeCollarColor = beeCollarColor;
   return settings;
 }
@@ -70,10 +89,15 @@ async function init() {
     el.addEventListener('change', () => window.settingsAPI.saveSettings(readForm()));
   });
 
-  characters.forEach((value) => {
-    const el = document.getElementById(`character-${value}`);
-    if (el) el.addEventListener('change', () => window.settingsAPI.saveSettings(readForm()));
-  });
+  const prevBtn = document.getElementById('characterPrev');
+  const nextBtn = document.getElementById('characterNext');
+  const stepCharacter = (delta) => {
+    characterIndex = (characterIndex + delta + CHARACTERS.length) % CHARACTERS.length;
+    renderCharacter();
+    window.settingsAPI.saveSettings(readForm());
+  };
+  if (prevBtn) prevBtn.addEventListener('click', () => stepCharacter(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => stepCharacter(1));
 
   const gearBtn = document.getElementById('beeGearBtn');
   const collarPicker = document.getElementById('collarPicker');

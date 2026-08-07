@@ -83,33 +83,43 @@
 
     .character-picker {
       display: flex;
+      align-items: center;
       gap: 10px;
       margin-bottom: 18px;
     }
-    .character-card {
+    .character-nav {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--card);
+      color: var(--fg);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .character-display {
+      position: relative;
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
       background: var(--card);
-      border: 2px solid var(--border);
+      border: 2px solid var(--accent);
       border-radius: 10px;
       padding: 10px 8px 12px;
-      cursor: pointer;
     }
-    .character-card input { position: absolute; opacity: 0; width: 0; height: 0; }
-    .character-card:has(input:checked) { border-color: var(--accent); }
-    .character-card .emoji { font-size: 30px; line-height: 1; }
-    .character-card .name { font-size: 12.5px; font-weight: 600; }
-    .character-card { position: relative; }
+    .character-display .emoji { font-size: 30px; line-height: 1; }
+    .character-display .name { font-size: 12.5px; font-weight: 600; }
     .character-gear {
       position: absolute;
       top: 4px;
       right: 4px;
       width: 20px;
       height: 20px;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       border: none;
@@ -119,6 +129,7 @@
       cursor: pointer;
       padding: 0;
     }
+    .character-gear.visible { display: flex; }
     .collar-picker {
       display: none;
       flex-wrap: wrap;
@@ -176,27 +187,13 @@
     </div>
   </div>
   <div class="character-picker">
-    <label class="character-card">
-      <input type="radio" name="character" value="crab" id="character-crab" />
-      <span class="emoji">🦀</span>
-      <span class="name">Krabbe</span>
-    </label>
-    <label class="character-card">
-      <input type="radio" name="character" value="avocado" id="character-avocado" />
-      <span class="emoji">🥑</span>
-      <span class="name">Avocado</span>
-    </label>
-    <label class="character-card">
-      <input type="radio" name="character" value="citrus" id="character-citrus" />
-      <span class="emoji">🍋</span>
-      <span class="name">Zitrusscheibe</span>
-    </label>
-    <label class="character-card">
-      <input type="radio" name="character" value="bee" id="character-bee" />
+    <button type="button" class="character-nav" id="characterPrev" aria-label="Voriger Charakter">‹</button>
+    <div class="character-display">
       <button type="button" class="character-gear" id="beeGearBtn" title="Halstuch-Farbe" aria-label="Halstuch-Farbe wählen">⚙️</button>
-      <span class="emoji">🐝</span>
-      <span class="name">Biene</span>
-    </label>
+      <span class="emoji" id="characterEmoji">🦀</span>
+      <span class="name" id="characterName">Krabbe</span>
+    </div>
+    <button type="button" class="character-nav" id="characterNext" aria-label="Nächster Charakter">›</button>
   </div>
   <div class="collar-picker" id="collarPicker">
     <span class="label">Halstuch-Farbe der Biene</span>
