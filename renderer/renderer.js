@@ -11,14 +11,25 @@ const PHRASES = {
   afterFeed: ['Lecker!', 'Mmmh, danke!', '*schmatzt*', 'Mehr Snacks bitte!'],
 };
 
-const ONBOARDING_STEPS = [
-  { text: 'Hallo! Ich bin dein DeskyBuddy 👋', duration: 3200 },
-  { text: 'Zieh mich einfach mit der Maus herum!', duration: 3600 },
-  { text: 'Ein Klick auf mich = Streicheln 🐾', duration: 3200 },
-  { text: 'Rechtsklick öffnet mein Menü — dort kannst du mich füttern, schlafen legen und mehr', duration: 4400 },
-  { text: 'Unter „Einstellungen“ kannst du mich ganz nach deinem Geschmack anpassen ⚙️', duration: 4400 },
-  { text: 'Über mein Tray-Icon findest du dieses Tutorial jederzeit wieder. Viel Spaß mit mir! 💛', duration: 4400 },
+// Durations stay fixed here; the text itself comes from i18n/{de,en}.json's "onboarding" keys
+// (see currentStrings/onboardingSteps() below) so the tour reads in the user's chosen language.
+const ONBOARDING_STEP_CONFIG = [
+  { key: 'step1', duration: 3200 },
+  { key: 'step2', duration: 3600 },
+  { key: 'step3', duration: 3200 },
+  { key: 'step4', duration: 4400 },
+  { key: 'step5', duration: 4400 },
+  { key: 'step6', duration: 4400 },
 ];
+
+// Populated by loadStrings()/onLanguageUpdate() in init(); null until the first IPC round trip
+// resolves, which — for a local invoke — is well before the 1800ms onboarding start delay.
+let currentStrings = null;
+
+function onboardingSteps() {
+  const dict = (currentStrings && currentStrings.onboarding) || {};
+  return ONBOARDING_STEP_CONFIG.map(({ key, duration }) => ({ text: dict[key] || '', duration }));
+}
 
 const PARTICLE_SHAPES = {
   heart: ['.X.X.', 'XXXXX', 'XXXXX', '.XXX.', '..X..'],
@@ -116,6 +127,18 @@ let afkZzzTimer = null;
 let alwaysDayFlag = false;
 let idleIntervalSec = 30;
 let powerSaveActive = false;
+let moodAffectsAnimations = true;
+let currentMood = 'neutral'; // 'happy' | 'neutral' | 'grumpy' | 'hungry' — see computeMood()
+
+// Mirrors the tamagotchi-style thresholds main.js already uses for its own hunger speech-bubble
+// check (fullness < 30). Hungry takes priority over grumpy since "buddy needs food" is the more
+// actionable state for the user to notice.
+function computeMood({ happiness, fullness }) {
+  if (fullness < 30) return 'hungry';
+  if (happiness < 30) return 'grumpy';
+  if (happiness >= 70) return 'happy';
+  return 'neutral';
+}
 
 // Typing / Listening / Idle state machine (state-machine.js). Typing blocks the idle-animation
 // pool below; Listening (headphones) does not. The existing pet/feed/sleep/drag/walk states in
@@ -247,12 +270,13 @@ function spawnParticles(kind, count) {
 // --- onboarding (first-launch walkthrough, replayable from the tray menu) ---
 
 function runOnboardingStep(i) {
-  if (i >= ONBOARDING_STEPS.length) {
+  const steps = onboardingSteps();
+  if (i >= steps.length) {
     onboardingActive = false;
     if (idleDirector) idleDirector.resume();
     return;
   }
-  const { text, duration } = ONBOARDING_STEPS[i];
+  const { text, duration } = steps[i];
   queueSpeech(text, duration);
   onboardingTimer = setTimeout(() => runOnboardingStep(i + 1), duration + 500);
 }
@@ -470,7 +494,7 @@ function wireEvents() {
     }, duration);
   });
 
-  window.buddyAPI.onInitConfig(({ forceNight: fn, character, alwaysDay, idleIntervalSec: interval, beeCollarColor: collar, showOnboarding }) => {
+  window.buddyAPI.onInitConfig(({ forceNight: fn, character, alwaysDay, idleIntervalSec: interval, beeCollarColor: collar, moodAffectsAnimations: moodEnabled, showOnboarding }) => {
     forceNight = fn;
     alwaysDayFlag = !!alwaysDay;
     applyDayNight();
@@ -485,6 +509,7 @@ function wireEvents() {
       idleIntervalSec = interval;
       if (idleDirector) idleDirector.setAverageGapSeconds(interval);
     }
+    if (moodEnabled !== undefined) moodAffectsAnimations = !!moodEnabled;
     if (showOnboarding) setTimeout(startOnboarding, 1800);
   });
 
@@ -503,10 +528,18 @@ function wireEvents() {
     applyDayNight();
   });
 
-  window.buddyAPI.onIdleConfigUpdate(({ idleIntervalSec: interval }) => {
-    if (interval === undefined) return;
-    idleIntervalSec = interval;
-    if (idleDirector) idleDirector.setAverageGapSeconds(interval);
+  window.buddyAPI.onIdleConfigUpdate(({ idleIntervalSec: interval, moodAffectsAnimations: moodEnabled }) => {
+    if (interval !== undefined) {
+      idleIntervalSec = interval;
+      if (idleDirector) idleDirector.setAverageGapSeconds(interval);
+    }
+    if (moodEnabled !== undefined) moodAffectsAnimations = !!moodEnabled;
+  });
+
+  window.buddyAPI.onStatsUpdate((state) => {
+    if (state && state.happiness !== undefined && state.fullness !== undefined) {
+      currentMood = computeMood(state);
+    }
   });
 
   // lookX comes in as real screen-space direction (cursor left/right of buddy). The whole
@@ -606,6 +639,9 @@ function handleAutoSleep() {
 // --- init ---
 
 function init() {
+  window.buddyAPI.loadStrings().then(({ strings }) => { currentStrings = strings; });
+  window.buddyAPI.onLanguageUpdate(({ strings }) => { currentStrings = strings; });
+
   stageEl = document.getElementById('stage');
   propMountEl = document.getElementById('prop-mount');
   laptopEl = createLaptopAccessory();
@@ -622,6 +658,7 @@ function init() {
   idleDirector = window.BuddyIdleDirector.create({
     pool: window.BuddyIdlePool,
     getCharacter: () => currentCharacter,
+    getMood: () => (moodAffectsAnimations ? currentMood : null),
     canPlay: () => currentState === 'IDLE' && !sleeping && !buddyState.isIdleBlocked(),
     getSprite: () => dragonSprite,
     getCanvasEl: () => dragonSprite && dragonSprite.canvas,
@@ -652,7 +689,9 @@ function init() {
   }, LEG_STEP_MS);
 
   window.buddyAPI.loadState().then((s) => {
-    if (s && s.fullness < 30) {
+    if (!s) return;
+    currentMood = computeMood(s);
+    if (s.fullness < 30) {
       setTimeout(() => queueSpeech('Ich hab ein bisschen Hunger...'), 2000);
     }
   });

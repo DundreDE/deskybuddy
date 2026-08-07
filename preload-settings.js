@@ -11,4 +11,8 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   onPowerSaveUpdate: (callback) => {
     ipcRenderer.on('power-save-updated', (_event, payload) => callback(payload));
   },
+  loadStrings: () => ipcRenderer.invoke('load-strings'),
+  onLanguageUpdate: (callback) => {
+    ipcRenderer.on('language-updated', (_event, payload) => callback(payload));
+  },
 });

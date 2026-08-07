@@ -1,8 +1,12 @@
 // Idle-animation pool: each entry is a hard-keyframed sequence (now typically 4-6 poses, no
 // in-between tweening) that idle-director.js plays back when the Idle state is active and not
 // blocked by Typing. `appliesTo` restricts an entry to a character; entries without a restriction
-// apply to both. Fields on each frame are deltas applied on top of the previous frame —
-// idle-director.js resets everything to neutral before/after a run.
+// apply to both. `moods` restricts an entry to one or more mood tiers ('happy' | 'neutral' |
+// 'grumpy' | 'hungry', see idle-director.js/renderer.js computeMood()); entries without it apply
+// regardless of mood — same optional-restriction shape as `appliesTo`, just filtered by mood
+// instead of character. Only enabled when the moodAffectsAnimations setting is on. Fields on each
+// frame are deltas applied on top of the previous frame — idle-director.js resets everything to
+// neutral before/after a run.
 //
 // frame fields:
 //   holdMs    - how long this pose is held before cutting to the next one
@@ -139,7 +143,7 @@
       { holdMs: 1000, transform: null, blinking: true, particle: 'zzz' },
       { holdMs: 400, transform: null, blinking: false },
     ] },
-    { id: 'snack-drawer', frames: [
+    { id: 'snack-drawer', moods: ['hungry'], frames: [
       { holdMs: 350, prop: 'snack', propPos: 'hands' },
       { holdMs: 300, prop: 'snack', propPos: 'hands', mouthOpen: true },
       { holdMs: 300, prop: 'snack', propPos: 'hands', mouthOpen: false },
@@ -147,6 +151,12 @@
       { holdMs: 300, prop: 'snack', propPos: 'hands', mouthOpen: false },
       { holdMs: 300, prop: null },
     ] },
+    { id: 'grumpy-huff', moods: ['grumpy'], frames: [
+      { holdMs: 300, transform: 'anim-tilt', mouthOpen: false, blinking: false },
+      { holdMs: 250, transform: 'anim-shake', mouthOpen: false },
+      { holdMs: 300, transform: 'anim-tilt', mouthOpen: false, blinking: true },
+      { holdMs: 300, transform: null, blinking: false },
+    ], speech: 'Hmpf.' },
     { id: 'wave-hello', frames: [
       { holdMs: 220, transform: 'anim-nudge', pose: 'wave' },
       { holdMs: 220, transform: 'anim-nudge', pose: 'wave' },
@@ -372,7 +382,7 @@
       { holdMs: 600, transform: 'anim-tilt' },
       { holdMs: 300, transform: null },
     ], speech: 'Sind das Sterne?' },
-    { id: 'happy-dance', frames: [
+    { id: 'happy-dance', moods: ['happy'], frames: [
       { holdMs: 220, transform: 'anim-bounce' },
       { holdMs: 220, transform: 'anim-wobble' },
       { holdMs: 220, transform: 'anim-bounce' },
@@ -386,13 +396,13 @@
       { holdMs: 900, transform: 'anim-tilt', blinking: true },
       { holdMs: 400, transform: null, blinking: false },
     ], speech: '*träumt vor sich hin*' },
-    { id: 'high-five-air', frames: [
+    { id: 'high-five-air', moods: ['happy'], frames: [
       { holdMs: 200, transform: 'anim-nudge' },
       { holdMs: 180, transform: 'anim-bounce', particle: 'sparkle' },
       { holdMs: 220, transform: 'anim-nudge' },
       { holdMs: 260, transform: null },
     ] },
-    { id: 'confetti-pop', frames: [
+    { id: 'confetti-pop', moods: ['happy'], frames: [
       { holdMs: 200, transform: 'anim-bounce', particle: 'sparkle' },
       { holdMs: 200, transform: 'anim-bounce' },
       { holdMs: 200, transform: 'anim-bounce', particle: 'sparkle' },
@@ -431,7 +441,7 @@
       { holdMs: 260, transform: 'anim-squish' },
       { holdMs: 300, transform: null, blinking: false },
     ] },
-    { id: 'applause-moment', frames: [
+    { id: 'applause-moment', moods: ['happy'], frames: [
       { holdMs: 200, transform: 'anim-nudge', particle: 'sparkle' },
       { holdMs: 200, transform: 'anim-bounce' },
       { holdMs: 200, transform: 'anim-nudge', particle: 'sparkle' },

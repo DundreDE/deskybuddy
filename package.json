@@ -1,6 +1,6 @@
 {
   "name": "deskybuddy",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "DeskyBuddy — a cute chibi desktop pet that sits on your taskbar.",
   "private": true,
   "main": "main.js",
@@ -49,6 +49,7 @@
       "preload-settings.js",
       "renderer/**/*",
       "native/**/*",
+      "i18n/**/*",
       "package.json"
     ],
     "asarUnpack": [

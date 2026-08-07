@@ -62,6 +62,12 @@ const MEDIA_SCRIPT_PATH = app.isPackaged
   : path.join(__dirname, 'native', 'get-media-status.ps1');
 const MULTI_MONITOR_POLL_MS = 2000;
 
+// Test-only overrides (see BUDDY_USER_DATA_DIR above) so the decay suite doesn't need to wait
+// 15 real minutes for the grace period to elapse.
+const STATS_DECAY_INTERVAL_MS = Number(process.env.BUDDY_STATS_DECAY_INTERVAL_MS) || 5 * 60 * 1000;
+const STATS_DECAY_GRACE_MS = Number(process.env.BUDDY_STATS_DECAY_GRACE_MS) || 15 * 60 * 1000;
+const STATS_DECAY_AMOUNT = 3; // points lost per tick once past the grace period
+
 const FORCE_NIGHT = process.env.BUDDY_FORCE_NIGHT === '1';
 
 // Test-only override so the Playwright/Electron suite (tests/) never touches a real user's
@@ -86,6 +92,9 @@ const DEFAULT_SETTINGS = {
   alwaysDay: false,
   idleIntervalSec: 30, // average seconds between idle-pool animations (renderer picks within +/-50%)
   onboardingCompleted: false,
+  language: 'auto', // 'auto' | 'de' | 'en' — see resolveLanguage()
+  statsDecay: true,
+  moodAffectsAnimations: true,
 };
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -181,6 +190,10 @@ async function saveStateToDisk() {
   }
 }
 
+function broadcastState() {
+  if (win && !win.isDestroyed()) win.webContents.send('stats-updated', state);
+}
+
 function updateStats(action) {
   const now = Date.now();
   if (action === 'pet') {
@@ -191,6 +204,42 @@ function updateStats(action) {
     state.lastFed = now;
   }
   saveStateToDisk();
+  broadcastState();
+}
+
+// --- stats decay ---
+// Happiness/fullness drift back down toward 0 the longer buddy goes un-petted/un-fed, so the
+// tamagotchi stats actually mean something instead of only ever going up. Grace period keeps
+// fresh installs (lastPetted/lastFed still null) and recently-interacted-with buddies untouched.
+let statsDecayInterval = null;
+
+function applyStatsDecayTick() {
+  const now = Date.now();
+  let changed = false;
+  // No lastPetted/lastFed yet (fresh install) means "never interacted with", not "interacted
+  // with infinitely long ago" — leave those stats alone until the first real interaction.
+  if (state.happiness > 0 && state.lastPetted && now - state.lastPetted > STATS_DECAY_GRACE_MS) {
+    state.happiness = Math.max(0, state.happiness - STATS_DECAY_AMOUNT);
+    changed = true;
+  }
+  if (state.fullness > 0 && state.lastFed && now - state.lastFed > STATS_DECAY_GRACE_MS) {
+    state.fullness = Math.max(0, state.fullness - STATS_DECAY_AMOUNT);
+    changed = true;
+  }
+  if (changed) {
+    saveStateToDisk();
+    broadcastState();
+  }
+}
+
+function startStatsDecay() {
+  if (statsDecayInterval) return;
+  statsDecayInterval = setInterval(applyStatsDecayTick, STATS_DECAY_INTERVAL_MS);
+}
+
+function stopStatsDecay() {
+  if (statsDecayInterval) clearInterval(statsDecayInterval);
+  statsDecayInterval = null;
 }
 
 // --- settings persistence ---
@@ -211,6 +260,36 @@ async function saveSettingsToDisk() {
   } catch (err) {
     console.error('Buddy: failed to save settings', err);
   }
+}
+
+// --- i18n ---
+// Covers tray menu, update dialogs, onboarding tour text, and settings.html — the UI chrome a
+// non-German-speaking user needs to actually operate the app. Idle-animation flavor speech
+// (idle-pool.js, renderer.js's PHRASES) stays German-only for now; translating ~40 one-off
+// flavor lines is a separate content task, not part of making the app usable in English.
+const STRINGS = {
+  de: require('./i18n/de.json'),
+  en: require('./i18n/en.json'),
+};
+
+function resolveLanguage() {
+  if (settings.language === 'de' || settings.language === 'en') return settings.language;
+  // 'auto' (the default): fall back to English unless the OS locale is explicitly German.
+  return (app.getLocale() || '').toLowerCase().startsWith('de') ? 'de' : 'en';
+}
+
+function currentStrings() {
+  return STRINGS[resolveLanguage()] || STRINGS.de;
+}
+
+// Dotted-path lookup with {placeholder} interpolation, e.g. t('update.availableMessage', { version: '1.2.0' }).
+function t(key, vars) {
+  const dict = currentStrings();
+  let value = key.split('.').reduce((obj, part) => (obj && obj[part] !== undefined ? obj[part] : undefined), dict);
+  if (value === undefined) value = key.split('.').reduce((obj, part) => (obj && obj[part] !== undefined ? obj[part] : undefined), STRINGS.de);
+  if (value === undefined) return key;
+  if (vars) for (const [k, v] of Object.entries(vars)) value = value.replace(`{${k}}`, v);
+  return value;
 }
 
 // --- roaming ---
@@ -774,6 +853,7 @@ function applySettings() {
   if (settings.multiMonitorFollow && active) startMultiMonitorWatch(); else stopMultiMonitorWatch();
   if (settings.typingDetection && active) startTypingEval(); else stopTypingEval();
   if (settings.afkDetection && active) startAfkEval(); else stopAfkEval();
+  if (settings.statsDecay && active) startStatsDecay(); else stopStatsDecay();
   refreshUiohookLifecycle();
 }
 
@@ -806,8 +886,8 @@ autoUpdater.on('error', (err) => {
   if (manualUpdateCheck) {
     dialog.showMessageBox({
       type: 'error',
-      title: 'DeskyBuddy',
-      message: 'Update-Check fehlgeschlagen.',
+      title: t('update.failedTitle'),
+      message: t('update.failedMessage'),
       detail: String(err && err.message ? err.message : err),
     });
   }
@@ -816,7 +896,7 @@ autoUpdater.on('error', (err) => {
 
 autoUpdater.on('update-not-available', () => {
   if (manualUpdateCheck) {
-    dialog.showMessageBox({ type: 'info', title: 'DeskyBuddy', message: 'Du hast bereits die neueste Version.' });
+    dialog.showMessageBox({ type: 'info', title: t('update.alreadyLatestTitle'), message: t('update.alreadyLatestMessage') });
   }
   manualUpdateCheck = false;
 });
@@ -824,14 +904,15 @@ autoUpdater.on('update-not-available', () => {
 autoUpdater.on('update-available', async (info) => {
   manualUpdateCheck = false;
   const currentVersion = app.getVersion();
+  const availableMessage = t('update.availableMessage', { version: info.version, current: currentVersion });
 
   if (process.platform === 'win32') {
     const { response } = await dialog.showMessageBox({
       type: 'info',
-      title: 'DeskyBuddy Update',
-      message: `Eine neue Version ist verfügbar: v${info.version} (installiert: v${currentVersion}).`,
-      detail: 'Jetzt herunterladen und installieren?',
-      buttons: ['Jetzt installieren', 'Später'],
+      title: t('update.availableTitle'),
+      message: availableMessage,
+      detail: t('update.installDetail'),
+      buttons: [t('update.installNow'), t('update.later')],
       defaultId: 0,
       cancelId: 1,
     });
@@ -844,10 +925,10 @@ autoUpdater.on('update-available', async (info) => {
   // GitHub releases page, same as before.
   const { response } = await dialog.showMessageBox({
     type: 'info',
-    title: 'DeskyBuddy Update',
-    message: `Eine neue Version ist verfügbar: v${info.version} (installiert: v${currentVersion}).`,
-    detail: 'Die Download-Seite auf GitHub öffnen?',
-    buttons: ['Seite öffnen', 'Später'],
+    title: t('update.availableTitle'),
+    message: availableMessage,
+    detail: t('update.openPageDetail'),
+    buttons: [t('update.openPage'), t('update.later')],
     defaultId: 0,
     cancelId: 1,
   });
@@ -876,17 +957,17 @@ function triggerAction(action) {
 
 function buildMenu() {
   return Menu.buildFromTemplate([
-    { label: 'Streicheln', click: () => triggerAction('pet') },
-    { label: 'Füttern', click: () => triggerAction('feed') },
-    { label: 'Schlafen legen / Aufwecken', click: () => triggerAction('toggle-sleep') },
+    { label: t('tray.pet'), click: () => triggerAction('pet') },
+    { label: t('tray.feed'), click: () => triggerAction('feed') },
+    { label: t('tray.toggleSleep'), click: () => triggerAction('toggle-sleep') },
     { type: 'separator' },
-    { label: 'Energiesparmodus', type: 'checkbox', checked: powerSaveMode, click: () => setPowerSaveMode(!powerSaveMode) },
+    { label: t('tray.powerSave'), type: 'checkbox', checked: powerSaveMode, click: () => setPowerSaveMode(!powerSaveMode) },
     { type: 'separator' },
-    { label: 'Einstellungen...', click: () => createSettingsWindow() },
-    { label: 'Tutorial erneut anzeigen', click: () => { if (win && !win.isDestroyed()) win.webContents.send('show-onboarding'); } },
-    { label: 'Nach Updates suchen...', click: () => checkForUpdates(true) },
+    { label: t('tray.settings'), click: () => createSettingsWindow() },
+    { label: t('tray.replayTutorial'), click: () => { if (win && !win.isDestroyed()) win.webContents.send('show-onboarding'); } },
+    { label: t('tray.checkUpdates'), click: () => checkForUpdates(true) },
     { type: 'separator' },
-    { label: 'Beenden', click: () => app.quit() },
+    { label: t('tray.quit'), click: () => app.quit() },
   ]);
 }
 
@@ -937,7 +1018,7 @@ function createSettingsWindow() {
     width: 380,
     height: 500,
     resizable: false,
-    title: 'DeskyBuddy – Einstellungen',
+    title: t('settings.windowTitle'),
     webPreferences: {
       preload: path.join(__dirname, 'preload-settings.js'),
       contextIsolation: true,
@@ -987,7 +1068,15 @@ function createWindow() {
   win.once('ready-to-show', () => win.show());
   win.webContents.on('did-finish-load', () => {
     const showOnboarding = !settings.onboardingCompleted;
-    win.webContents.send('init-config', { forceNight: FORCE_NIGHT, character: settings.character, alwaysDay: settings.alwaysDay, idleIntervalSec: settings.idleIntervalSec, beeCollarColor: settings.beeCollarColor, showOnboarding });
+    win.webContents.send('init-config', {
+      forceNight: FORCE_NIGHT,
+      character: settings.character,
+      alwaysDay: settings.alwaysDay,
+      idleIntervalSec: settings.idleIntervalSec,
+      beeCollarColor: settings.beeCollarColor,
+      moodAffectsAnimations: settings.moodAffectsAnimations,
+      showOnboarding,
+    });
     if (showOnboarding) {
       settings.onboardingCompleted = true;
       saveSettingsToDisk();
@@ -1045,18 +1134,26 @@ function settingsPayload() {
 }
 
 ipcMain.handle('load-settings', async () => settingsPayload());
+ipcMain.handle('load-strings', async () => ({ language: resolveLanguage(), strings: currentStrings() }));
 ipcMain.on('save-settings', (_event, { settings: newSettings }) => {
   const characterChanged = newSettings.character && newSettings.character !== settings.character;
   const collarChanged = newSettings.beeCollarColor && newSettings.beeCollarColor !== settings.beeCollarColor;
+  const languageChanged = newSettings.language !== undefined && newSettings.language !== settings.language;
   settings = { ...settings, ...newSettings };
   saveSettingsToDisk();
   applySettings();
+  if (languageChanged && tray) tray.setContextMenu(buildMenu());
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings-updated', settingsPayload());
   if (win && !win.isDestroyed()) {
     win.webContents.send('day-mode-updated', { alwaysDay: settings.alwaysDay });
     if (characterChanged) win.webContents.send('character-updated', { character: settings.character });
     if (collarChanged) win.webContents.send('collar-color-updated', { beeCollarColor: settings.beeCollarColor });
-    win.webContents.send('idle-config-updated', { idleIntervalSec: settings.idleIntervalSec });
+    win.webContents.send('idle-config-updated', { idleIntervalSec: settings.idleIntervalSec, moodAffectsAnimations: settings.moodAffectsAnimations });
+  }
+  if (languageChanged) {
+    const payload = { language: resolveLanguage(), strings: currentStrings() };
+    if (win && !win.isDestroyed()) win.webContents.send('language-updated', payload);
+    if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('language-updated', payload);
   }
 });
 ipcMain.on('open-settings', () => createSettingsWindow());
@@ -1096,6 +1193,7 @@ app.on('before-quit', async () => {
   stopMediaWatch();
   stopCursorLook();
   stopMultiMonitorWatch();
+  stopStatsDecay();
   await saveStateToDisk();
   await saveSettingsToDisk();
 });

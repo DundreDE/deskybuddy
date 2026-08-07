@@ -85,6 +85,83 @@ test('switching character persists and remounts the new sprite', async () => {
     .toBe(22);
 });
 
+test('settings window renders translated text and updates live on language change', async () => {
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('open-settings');
+  });
+  const settingsWindow = await electronApp.waitForEvent('window', (w) => w.url().includes('settings.html'));
+  await settingsWindow.waitForLoadState('domcontentloaded');
+
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('save-settings', {}, { settings: { language: 'de' } });
+  });
+  await expect(settingsWindow.locator('h1')).toHaveText('DeskyBuddy – Einstellungen');
+
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('save-settings', {}, { settings: { language: 'en' } });
+  });
+  await expect(settingsWindow.locator('h1')).toHaveText('DeskyBuddy – Settings');
+  await expect(settingsWindow.locator('#characterName')).toHaveText('Crab');
+});
+
+test('stats decay reduces happiness/fullness after the grace period and persists', async () => {
+  await electronApp.close();
+
+  // Seed non-default stats with a lastPetted/lastFed already outside a 50ms grace window, so
+  // the very first fast decay tick (interval also sped up to 50ms) immediately applies.
+  fs.writeFileSync(
+    path.join(userDataDir, 'buddy-state.json'),
+    JSON.stringify({ happiness: 80, fullness: 80, lastPetted: Date.now() - 1000, lastFed: Date.now() - 1000 })
+  );
+
+  electronApp = await electron.launch({
+    args: [APP_ROOT, '--no-sandbox'],
+    env: {
+      ...process.env,
+      BUDDY_USER_DATA_DIR: userDataDir,
+      BUDDY_STATS_DECAY_GRACE_MS: '50',
+      BUDDY_STATS_DECAY_INTERVAL_MS: '100',
+    },
+  });
+  const window = await electronApp.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
+  await expect
+    .poll(() => window.evaluate(() => window.buddyAPI.loadState()).then((s) => s.happiness), { timeout: 5000 })
+    .toBeLessThan(80);
+
+  const stateFile = path.join(userDataDir, 'buddy-state.json');
+  await expect.poll(() => tryReadJsonField(stateFile, 'happiness')).toBeLessThan(80);
+  await expect.poll(() => tryReadJsonField(stateFile, 'fullness')).toBeLessThan(80);
+});
+
+test('stats decay stays off when the statsDecay setting is disabled', async () => {
+  await electronApp.close();
+
+  fs.writeFileSync(
+    path.join(userDataDir, 'buddy-state.json'),
+    JSON.stringify({ happiness: 80, fullness: 80, lastPetted: Date.now() - 1000, lastFed: Date.now() - 1000 })
+  );
+  fs.writeFileSync(path.join(userDataDir, 'buddy-settings.json'), JSON.stringify({ onboardingCompleted: true, statsDecay: false }));
+
+  electronApp = await electron.launch({
+    args: [APP_ROOT, '--no-sandbox'],
+    env: {
+      ...process.env,
+      BUDDY_USER_DATA_DIR: userDataDir,
+      BUDDY_STATS_DECAY_GRACE_MS: '50',
+      BUDDY_STATS_DECAY_INTERVAL_MS: '100',
+    },
+  });
+  const window = await electronApp.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
+  // Give the (disabled) decay timer several chances to fire, then confirm nothing moved.
+  await window.waitForTimeout(600);
+  const happiness = await window.evaluate(() => window.buddyAPI.loadState()).then((s) => s.happiness);
+  expect(happiness).toBe(80);
+});
+
 test('dragging the sprite past the threshold enters the DRAGGING state', async () => {
   const window = await electronApp.firstWindow();
   await window.waitForLoadState('domcontentloaded');

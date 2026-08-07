@@ -1,26 +1,46 @@
-const fields = ['autostart', 'mouseLook', 'typingDetection', 'musicDetection', 'afkDetection', 'multiMonitorFollow', 'hideFullscreen', 'alwaysDay'];
+const fields = ['autostart', 'mouseLook', 'typingDetection', 'musicDetection', 'afkDetection', 'multiMonitorFollow', 'hideFullscreen', 'alwaysDay', 'statsDecay', 'moodAffectsAnimations'];
 const rangeFields = ['idleIntervalSec'];
 const CHARACTERS = [
-  { value: 'crab', emoji: '🦀', name: 'Krabbe' },
-  { value: 'avocado', emoji: '🥑', name: 'Avocado' },
-  { value: 'citrus', emoji: '🍋', name: 'Zitrusscheibe' },
-  { value: 'bee', emoji: '🐝', name: 'Biene' },
-  { value: 'monkey', emoji: '🐒', name: 'Affe' },
-  { value: 'toast', emoji: '🍞', name: 'Toast' },
-  { value: 'kaktus', emoji: '🌵', name: 'Kaktus' },
-  { value: 'wolke', emoji: '☁️', name: 'Wolke' },
-  { value: 'croissant', emoji: '🥐', name: 'Croissant' },
-  { value: 'pilz', emoji: '🍄', name: 'Fliegenpilz' },
+  { value: 'crab', emoji: '🦀' },
+  { value: 'avocado', emoji: '🥑' },
+  { value: 'citrus', emoji: '🍋' },
+  { value: 'bee', emoji: '🐝' },
+  { value: 'monkey', emoji: '🐒' },
+  { value: 'toast', emoji: '🍞' },
+  { value: 'kaktus', emoji: '🌵' },
+  { value: 'wolke', emoji: '☁️' },
+  { value: 'croissant', emoji: '🥐' },
+  { value: 'pilz', emoji: '🍄' },
 ];
 let characterIndex = 0;
 let beeCollarColor = '#8fd6ff';
+let currentStrings = null; // { onboarding, tray, settings: {...}, character: {...} } — see i18n/*.json
+
+// Dotted-path lookup with {placeholder} interpolation, e.g. t('settings.idle.intervalLabel', { seconds: 30 }).
+function t(key, vars) {
+  const dict = currentStrings || {};
+  let value = key.split('.').reduce((obj, part) => (obj && obj[part] !== undefined ? obj[part] : undefined), dict);
+  if (value === undefined) return key;
+  if (vars) for (const [k, v] of Object.entries(vars)) value = value.replace(`{${k}}`, v);
+  return value;
+}
+
+function applyTranslations() {
+  if (!currentStrings) return;
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.setAttribute('title', t(el.dataset.i18nTitle)); });
+  renderCharacter();
+  updateIdleIntervalLabel(document.getElementById('idleIntervalSec').value);
+}
 
 function renderCharacter() {
   const current = CHARACTERS[characterIndex];
   const emojiEl = document.getElementById('characterEmoji');
   const nameEl = document.getElementById('characterName');
   if (emojiEl) emojiEl.textContent = current.emoji;
-  if (nameEl) nameEl.textContent = current.name;
+  if (nameEl) nameEl.textContent = t(`character.${current.value}`);
   const gearBtn = document.getElementById('beeGearBtn');
   if (gearBtn) gearBtn.classList.toggle('visible', current.value === 'bee');
   if (current.value !== 'bee') {
@@ -31,7 +51,7 @@ function renderCharacter() {
 
 function updateIdleIntervalLabel(value) {
   const label = document.getElementById('idleIntervalLabel');
-  if (label) label.textContent = `alle ~${value}s`;
+  if (label) label.textContent = t('settings.idle.intervalLabel', { seconds: value });
 }
 
 function applyToForm(settings) {
@@ -54,6 +74,8 @@ function applyToForm(settings) {
   document.querySelectorAll('.collar-swatch').forEach((el) => {
     el.classList.toggle('selected', el.dataset.color === beeCollarColor);
   });
+  const languageEl = document.getElementById('language');
+  if (languageEl) languageEl.value = settings.language || 'auto';
 }
 
 function readForm() {
@@ -68,10 +90,20 @@ function readForm() {
   });
   settings.character = CHARACTERS[characterIndex].value;
   settings.beeCollarColor = beeCollarColor;
+  const languageEl = document.getElementById('language');
+  if (languageEl) settings.language = languageEl.value;
   return settings;
 }
 
 async function init() {
+  const { strings } = await window.settingsAPI.loadStrings();
+  currentStrings = strings;
+  applyTranslations();
+  window.settingsAPI.onLanguageUpdate(({ strings: updated }) => {
+    currentStrings = updated;
+    applyTranslations();
+  });
+
   const settings = await window.settingsAPI.loadSettings();
   applyToForm(settings);
 
@@ -81,6 +113,9 @@ async function init() {
     powerSaveEl.addEventListener('change', () => window.settingsAPI.setPowerSave(powerSaveEl.checked));
     window.settingsAPI.onPowerSaveUpdate(({ enabled }) => { powerSaveEl.checked = enabled; });
   }
+
+  const languageEl = document.getElementById('language');
+  if (languageEl) languageEl.addEventListener('change', () => window.settingsAPI.saveSettings(readForm()));
 
   fields.forEach((key) => {
     const el = document.getElementById(key);

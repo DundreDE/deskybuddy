@@ -10,7 +10,7 @@
   const MAX_AVG_GAP_SEC = 180;
   const DEFAULT_HOLD_MS = 400;
 
-  function createIdleDirector({ pool, getCharacter, canPlay, getSprite, getCanvasEl, propMount, onSpeech, onParticle, avgGapSeconds }) {
+  function createIdleDirector({ pool, getCharacter, getMood, canPlay, getSprite, getCanvasEl, propMount, onSpeech, onParticle, avgGapSeconds }) {
     let gapTimer = null;
     let frameTimer = null;
     let playing = false;
@@ -46,7 +46,11 @@
         return;
       }
       const character = getCharacter();
-      const candidates = pool.filter((a) => !a.appliesTo || a.appliesTo.includes(character));
+      // getMood() returning null/undefined (moodAffectsAnimations off, or mood not known yet)
+      // skips the moods filter entirely — every entry, mood-tagged or not, is eligible, same
+      // as before this feature existed.
+      const mood = getMood ? getMood() : null;
+      const candidates = pool.filter((a) => (!a.appliesTo || a.appliesTo.includes(character)) && (!mood || !a.moods || a.moods.includes(mood)));
       if (!candidates.length) {
         scheduleNext();
         return;

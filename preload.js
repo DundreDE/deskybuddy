@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('buddyAPI', {
   quit: () => ipcRenderer.send('quit-app'),
 
   loadState: () => ipcRenderer.invoke('load-state'),
+  loadStrings: () => ipcRenderer.invoke('load-strings'),
 
   onTriggerAction: (callback) => {
     ipcRenderer.on('trigger-action', (_event, payload) => callback(payload));
@@ -49,5 +50,11 @@ contextBridge.exposeInMainWorld('buddyAPI', {
   },
   onShowOnboarding: (callback) => {
     ipcRenderer.on('show-onboarding', () => callback());
+  },
+  onLanguageUpdate: (callback) => {
+    ipcRenderer.on('language-updated', (_event, payload) => callback(payload));
+  },
+  onStatsUpdate: (callback) => {
+    ipcRenderer.on('stats-updated', (_event, payload) => callback(payload));
   },
 });

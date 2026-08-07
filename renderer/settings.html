@@ -166,37 +166,57 @@
       .warning-banner { background: #3a331a; border-color: #6b5215; color: #f0d998; }
     }
     .warning-banner.visible { display: block; }
+    select.lang-select {
+      background: var(--card);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12.5px;
+    }
   </style>
 </head>
 <body>
-  <h1>DeskyBuddy – Einstellungen</h1>
-  <p class="hint">Änderungen wirken sofort.</p>
+  <h1 data-i18n="settings.windowTitle">DeskyBuddy – Einstellungen</h1>
+  <p class="hint" data-i18n="settings.hint">Änderungen wirken sofort.</p>
 
   <div class="option">
     <div class="text">
-      <div class="title">Energiesparmodus</div>
-      <div class="desc">Pausiert Tipp-/Musik-/Vollbild-Erkennung, Herumlaufen und alle Idle-Animationen temporär, ohne die App neu zu starten. Wird beim nächsten Start von DeskyBuddy wieder zurückgesetzt.</div>
+      <div class="title" data-i18n="settings.language.title">Sprache</div>
+      <div class="desc" data-i18n="settings.language.desc">Sprache der Benutzeroberfläche.</div>
+    </div>
+    <select class="lang-select" id="language">
+      <option value="auto" data-i18n="settings.language.auto">Automatisch (System)</option>
+      <option value="de" data-i18n="settings.language.de">Deutsch</option>
+      <option value="en" data-i18n="settings.language.en">English</option>
+    </select>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title" data-i18n="settings.powerSave.title">Energiesparmodus</div>
+      <div class="desc" data-i18n="settings.powerSave.desc">Pausiert Tipp-/Musik-/Vollbild-Erkennung, Herumlaufen und alle Idle-Animationen temporär, ohne die App neu zu starten. Wird beim nächsten Start von DeskyBuddy wieder zurückgesetzt.</div>
     </div>
     <label class="switch"><input type="checkbox" id="powerSave" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Charakter</div>
-      <div class="desc">Wähle, wer auf deinem Bildschirm herumläuft.</div>
+      <div class="title" data-i18n="settings.character.title">Charakter</div>
+      <div class="desc" data-i18n="settings.character.desc">Wähle, wer auf deinem Bildschirm herumläuft.</div>
     </div>
   </div>
   <div class="character-picker">
-    <button type="button" class="character-nav" id="characterPrev" aria-label="Voriger Charakter">‹</button>
+    <button type="button" class="character-nav" id="characterPrev" data-i18n-aria="settings.character.prevAria" aria-label="Voriger Charakter">‹</button>
     <div class="character-display">
-      <button type="button" class="character-gear" id="beeGearBtn" title="Halstuch-Farbe" aria-label="Halstuch-Farbe wählen">⚙️</button>
+      <button type="button" class="character-gear" id="beeGearBtn" data-i18n-title="settings.collar.gearTitle" data-i18n-aria="settings.collar.gearAria" title="Halstuch-Farbe" aria-label="Halstuch-Farbe wählen">⚙️</button>
       <span class="emoji" id="characterEmoji">🦀</span>
       <span class="name" id="characterName">Krabbe</span>
     </div>
-    <button type="button" class="character-nav" id="characterNext" aria-label="Nächster Charakter">›</button>
+    <button type="button" class="character-nav" id="characterNext" data-i18n-aria="settings.character.nextAria" aria-label="Nächster Charakter">›</button>
   </div>
   <div class="collar-picker" id="collarPicker">
-    <span class="label">Halstuch-Farbe der Biene</span>
+    <span class="label" data-i18n="settings.collar.label">Halstuch-Farbe der Biene</span>
     <button type="button" class="collar-swatch" data-color="#8fd6ff" style="background:#8fd6ff"></button>
     <button type="button" class="collar-swatch" data-color="#ffb3c6" style="background:#ffb3c6"></button>
     <button type="button" class="collar-swatch" data-color="#ff6b6b" style="background:#ff6b6b"></button>
@@ -207,77 +227,93 @@
 
   <div class="option">
     <div class="text">
-      <div class="title">Automatisch starten</div>
-      <div class="desc">DeskyBuddy startet mit Windows.</div>
+      <div class="title" data-i18n="settings.autostart.title">Automatisch starten</div>
+      <div class="desc" data-i18n="settings.autostart.desc">DeskyBuddy startet mit Windows.</div>
     </div>
     <label class="switch"><input type="checkbox" id="autostart" /><span class="slider"></span></label>
   </div>
-  <div class="warning-banner" id="autostartWarning">
+  <div class="warning-banner" id="autostartWarning" data-i18n-html="settings.autostart.warningHtml">
     ⚠️ Autostart ist aktiviert, aber Windows hat ihn blockiert. Bitte unter <b>Einstellungen → Apps → Autostart</b> "DeskyBuddy" (bzw. "Electron") manuell aktivieren.
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Augen folgen der Maus</div>
-      <div class="desc">DeskyBuddy schaut in die Richtung deines Mauszeigers.</div>
+      <div class="title" data-i18n="settings.mouseLook.title">Augen folgen der Maus</div>
+      <div class="desc" data-i18n="settings.mouseLook.desc">DeskyBuddy schaut in die Richtung deines Mauszeigers.</div>
     </div>
     <label class="switch"><input type="checkbox" id="mouseLook" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Tipp-Erkennung</div>
-      <div class="desc">Setzt sich mit einem Laptop hin, wenn du viel schreibst. Zählt nur Tastenanschläge, speichert nie was du tippst.</div>
+      <div class="title" data-i18n="settings.typingDetection.title">Tipp-Erkennung</div>
+      <div class="desc" data-i18n="settings.typingDetection.desc">Setzt sich mit einem Laptop hin, wenn du viel schreibst. Zählt nur Tastenanschläge, speichert nie was du tippst.</div>
     </div>
     <label class="switch"><input type="checkbox" id="typingDetection" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Musik-Erkennung</div>
-      <div class="desc">Setzt Kopfhörer auf, wenn gerade Musik läuft (Spotify, YouTube Music, ...).</div>
+      <div class="title" data-i18n="settings.musicDetection.title">Musik-Erkennung</div>
+      <div class="desc" data-i18n="settings.musicDetection.desc">Setzt Kopfhörer auf, wenn gerade Musik läuft (Spotify, YouTube Music, ...).</div>
     </div>
     <label class="switch"><input type="checkbox" id="musicDetection" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Abwesenheits-Erkennung</div>
-      <div class="desc">DeskyBuddy wird schläfrig (Zzz), wenn du ein paar Minuten weder Tastatur noch Maus benutzt hast — läuft nebenbei weiter, ohne die Idle-Animationen zu unterbrechen.</div>
+      <div class="title" data-i18n="settings.afkDetection.title">Abwesenheits-Erkennung</div>
+      <div class="desc" data-i18n="settings.afkDetection.desc">DeskyBuddy wird schläfrig (Zzz), wenn du ein paar Minuten weder Tastatur noch Maus benutzt hast — läuft nebenbei weiter, ohne die Idle-Animationen zu unterbrechen.</div>
     </div>
     <label class="switch"><input type="checkbox" id="afkDetection" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Mehreren Bildschirmen folgen</div>
-      <div class="desc">DeskyBuddy wechselt zu dem Monitor, auf dem gerade dein aktives Fenster (oder die Maus) ist.</div>
+      <div class="title" data-i18n="settings.multiMonitorFollow.title">Mehreren Bildschirmen folgen</div>
+      <div class="desc" data-i18n="settings.multiMonitorFollow.desc">DeskyBuddy wechselt zu dem Monitor, auf dem gerade dein aktives Fenster (oder die Maus) ist.</div>
     </div>
     <label class="switch"><input type="checkbox" id="multiMonitorFollow" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Bei Vollbild-Spielen ausblenden</div>
-      <div class="desc">DeskyBuddy versteckt sich, solange eine App im Vollbild läuft.</div>
+      <div class="title" data-i18n="settings.hideFullscreen.title">Bei Vollbild-Spielen ausblenden</div>
+      <div class="desc" data-i18n="settings.hideFullscreen.desc">DeskyBuddy versteckt sich, solange eine App im Vollbild läuft.</div>
     </div>
     <label class="switch"><input type="checkbox" id="hideFullscreen" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Immer Tag-Modus</div>
-      <div class="desc">DeskyBuddy sieht immer wie am Tag aus, auch nachts — für jeden Charakter.</div>
+      <div class="title" data-i18n="settings.alwaysDay.title">Immer Tag-Modus</div>
+      <div class="desc" data-i18n="settings.alwaysDay.desc">DeskyBuddy sieht immer wie am Tag aus, auch nachts — für jeden Charakter.</div>
     </div>
     <label class="switch"><input type="checkbox" id="alwaysDay" /><span class="slider"></span></label>
   </div>
 
   <div class="option">
     <div class="text">
-      <div class="title">Idle-Animationen</div>
-      <div class="desc">Wie oft DeskyBuddy von selbst eine kleine Aktion macht (lesen, gähnen, würfeln ...), wenn er gerade nichts anderes tut. <span id="idleIntervalLabel">alle ~30s</span></div>
+      <div class="title" data-i18n="settings.idle.title">Idle-Animationen</div>
+      <div class="desc"><span data-i18n="settings.idle.desc">Wie oft DeskyBuddy von selbst eine kleine Aktion macht (lesen, gähnen, würfeln ...), wenn er gerade nichts anderes tut.</span> <span id="idleIntervalLabel">alle ~30s</span></div>
       <input type="range" id="idleIntervalSec" min="5" max="180" step="5" style="width: 100%; margin-top: 8px;" />
     </div>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title" data-i18n="settings.statsDecay.title">Verfall von Zuneigung/Hunger</div>
+      <div class="desc" data-i18n="settings.statsDecay.desc">Zuneigung und Sättigung sinken mit der Zeit wieder, wenn du DeskyBuddy eine Weile nicht streichelst oder fütterst.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="statsDecay" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title" data-i18n="settings.moodAffectsAnimations.title">Laune beeinflusst Animationen</div>
+      <div class="desc" data-i18n="settings.moodAffectsAnimations.desc">Manche Idle-Animationen erscheinen nur, wenn DeskyBuddy gerade besonders gut gelaunt, mürrisch oder hungrig ist.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="moodAffectsAnimations" /><span class="slider"></span></label>
   </div>
 
   <script src="settings.js"></script>

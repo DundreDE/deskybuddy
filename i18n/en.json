@@ -1,0 +1,117 @@
+{
+  "tray": {
+    "pet": "Pet",
+    "feed": "Feed",
+    "toggleSleep": "Put to sleep / Wake up",
+    "powerSave": "Power-save mode",
+    "settings": "Settings...",
+    "replayTutorial": "Replay tutorial",
+    "checkUpdates": "Check for updates...",
+    "quit": "Quit"
+  },
+  "update": {
+    "alreadyLatestTitle": "DeskyBuddy",
+    "alreadyLatestMessage": "You already have the latest version.",
+    "availableTitle": "DeskyBuddy Update",
+    "availableMessage": "A new version is available: v{version} (installed: v{current}).",
+    "installDetail": "Download and install now?",
+    "installNow": "Install now",
+    "later": "Later",
+    "openPageDetail": "Open the download page on GitHub?",
+    "openPage": "Open page",
+    "failedTitle": "DeskyBuddy",
+    "failedMessage": "Update check failed."
+  },
+  "onboarding": {
+    "step1": "Hi! I'm your DeskyBuddy 👋",
+    "step2": "Just drag me around with your mouse!",
+    "step3": "Click me to pet me 🐾",
+    "step4": "Right-click opens my menu — feed me, put me to sleep, and more",
+    "step5": "Under \"Settings\" you can customize me however you like ⚙️",
+    "step6": "You can always find this tutorial again from my tray icon. Have fun with me! 💛"
+  },
+  "settings": {
+    "windowTitle": "DeskyBuddy – Settings",
+    "hint": "Changes apply immediately.",
+    "language": {
+      "title": "Language",
+      "desc": "Language of the user interface.",
+      "auto": "Automatic (system)",
+      "de": "Deutsch",
+      "en": "English"
+    },
+    "powerSave": {
+      "title": "Power-save mode",
+      "desc": "Temporarily pauses typing/music/fullscreen detection, roaming, and all idle animations without restarting the app. Resets again the next time DeskyBuddy starts."
+    },
+    "character": {
+      "title": "Character",
+      "desc": "Choose who roams around your screen.",
+      "prevAria": "Previous character",
+      "nextAria": "Next character"
+    },
+    "collar": {
+      "gearTitle": "Collar color",
+      "gearAria": "Choose collar color",
+      "label": "Bee's collar color"
+    },
+    "autostart": {
+      "title": "Start automatically",
+      "desc": "DeskyBuddy starts with Windows.",
+      "warningHtml": "⚠️ Autostart is enabled, but Windows has blocked it. Please enable \"DeskyBuddy\" (or \"Electron\") manually under <b>Settings → Apps → Startup</b>."
+    },
+    "mouseLook": {
+      "title": "Eyes follow the mouse",
+      "desc": "DeskyBuddy looks in the direction of your mouse cursor."
+    },
+    "typingDetection": {
+      "title": "Typing detection",
+      "desc": "Sits down with a laptop when you type a lot. Only counts keystrokes, never stores what you type."
+    },
+    "musicDetection": {
+      "title": "Music detection",
+      "desc": "Puts on headphones when music is currently playing (Spotify, YouTube Music, ...)."
+    },
+    "afkDetection": {
+      "title": "Away detection",
+      "desc": "DeskyBuddy gets drowsy (Zzz) after a few minutes without keyboard or mouse activity — runs alongside idle animations without interrupting them."
+    },
+    "multiMonitorFollow": {
+      "title": "Follow multiple monitors",
+      "desc": "DeskyBuddy switches to whichever monitor your active window (or mouse) is currently on."
+    },
+    "hideFullscreen": {
+      "title": "Hide during fullscreen apps",
+      "desc": "DeskyBuddy hides itself while an app is running in fullscreen."
+    },
+    "alwaysDay": {
+      "title": "Always day mode",
+      "desc": "DeskyBuddy always looks like it's daytime, even at night — for every character."
+    },
+    "idle": {
+      "title": "Idle animations",
+      "desc": "How often DeskyBuddy does a little action on its own (reading, yawning, rolling dice, ...) when it isn't doing anything else.",
+      "intervalLabel": "every ~{seconds}s"
+    },
+    "statsDecay": {
+      "title": "Affection/hunger decay",
+      "desc": "Affection and fullness drift back down over time if you don't pet or feed DeskyBuddy for a while."
+    },
+    "moodAffectsAnimations": {
+      "title": "Mood affects animations",
+      "desc": "Some idle animations only show up when DeskyBuddy is especially happy, grumpy, or hungry."
+    }
+  },
+  "character": {
+    "crab": "Crab",
+    "avocado": "Avocado",
+    "citrus": "Citrus Slice",
+    "bee": "Bee",
+    "monkey": "Monkey",
+    "toast": "Toast",
+    "kaktus": "Cactus",
+    "wolke": "Cloud",
+    "croissant": "Croissant",
+    "pilz": "Toadstool"
+  }
+}

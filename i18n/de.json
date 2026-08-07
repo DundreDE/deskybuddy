@@ -1,0 +1,117 @@
+{
+  "tray": {
+    "pet": "Streicheln",
+    "feed": "Füttern",
+    "toggleSleep": "Schlafen legen / Aufwecken",
+    "powerSave": "Energiesparmodus",
+    "settings": "Einstellungen...",
+    "replayTutorial": "Tutorial erneut anzeigen",
+    "checkUpdates": "Nach Updates suchen...",
+    "quit": "Beenden"
+  },
+  "update": {
+    "alreadyLatestTitle": "DeskyBuddy",
+    "alreadyLatestMessage": "Du hast bereits die neueste Version.",
+    "availableTitle": "DeskyBuddy Update",
+    "availableMessage": "Eine neue Version ist verfügbar: v{version} (installiert: v{current}).",
+    "installDetail": "Jetzt herunterladen und installieren?",
+    "installNow": "Jetzt installieren",
+    "later": "Später",
+    "openPageDetail": "Die Download-Seite auf GitHub öffnen?",
+    "openPage": "Seite öffnen",
+    "failedTitle": "DeskyBuddy",
+    "failedMessage": "Update-Check fehlgeschlagen."
+  },
+  "onboarding": {
+    "step1": "Hallo! Ich bin dein DeskyBuddy 👋",
+    "step2": "Zieh mich einfach mit der Maus herum!",
+    "step3": "Ein Klick auf mich = Streicheln 🐾",
+    "step4": "Rechtsklick öffnet mein Menü — dort kannst du mich füttern, schlafen legen und mehr",
+    "step5": "Unter „Einstellungen“ kannst du mich ganz nach deinem Geschmack anpassen ⚙️",
+    "step6": "Über mein Tray-Icon findest du dieses Tutorial jederzeit wieder. Viel Spaß mit mir! 💛"
+  },
+  "settings": {
+    "windowTitle": "DeskyBuddy – Einstellungen",
+    "hint": "Änderungen wirken sofort.",
+    "language": {
+      "title": "Sprache",
+      "desc": "Sprache der Benutzeroberfläche.",
+      "auto": "Automatisch (System)",
+      "de": "Deutsch",
+      "en": "English"
+    },
+    "powerSave": {
+      "title": "Energiesparmodus",
+      "desc": "Pausiert Tipp-/Musik-/Vollbild-Erkennung, Herumlaufen und alle Idle-Animationen temporär, ohne die App neu zu starten. Wird beim nächsten Start von DeskyBuddy wieder zurückgesetzt."
+    },
+    "character": {
+      "title": "Charakter",
+      "desc": "Wähle, wer auf deinem Bildschirm herumläuft.",
+      "prevAria": "Voriger Charakter",
+      "nextAria": "Nächster Charakter"
+    },
+    "collar": {
+      "gearTitle": "Halstuch-Farbe",
+      "gearAria": "Halstuch-Farbe wählen",
+      "label": "Halstuch-Farbe der Biene"
+    },
+    "autostart": {
+      "title": "Automatisch starten",
+      "desc": "DeskyBuddy startet mit Windows.",
+      "warningHtml": "⚠️ Autostart ist aktiviert, aber Windows hat ihn blockiert. Bitte unter <b>Einstellungen → Apps → Autostart</b> \"DeskyBuddy\" (bzw. \"Electron\") manuell aktivieren."
+    },
+    "mouseLook": {
+      "title": "Augen folgen der Maus",
+      "desc": "DeskyBuddy schaut in die Richtung deines Mauszeigers."
+    },
+    "typingDetection": {
+      "title": "Tipp-Erkennung",
+      "desc": "Setzt sich mit einem Laptop hin, wenn du viel schreibst. Zählt nur Tastenanschläge, speichert nie was du tippst."
+    },
+    "musicDetection": {
+      "title": "Musik-Erkennung",
+      "desc": "Setzt Kopfhörer auf, wenn gerade Musik läuft (Spotify, YouTube Music, ...)."
+    },
+    "afkDetection": {
+      "title": "Abwesenheits-Erkennung",
+      "desc": "DeskyBuddy wird schläfrig (Zzz), wenn du ein paar Minuten weder Tastatur noch Maus benutzt hast — läuft nebenbei weiter, ohne die Idle-Animationen zu unterbrechen."
+    },
+    "multiMonitorFollow": {
+      "title": "Mehreren Bildschirmen folgen",
+      "desc": "DeskyBuddy wechselt zu dem Monitor, auf dem gerade dein aktives Fenster (oder die Maus) ist."
+    },
+    "hideFullscreen": {
+      "title": "Bei Vollbild-Spielen ausblenden",
+      "desc": "DeskyBuddy versteckt sich, solange eine App im Vollbild läuft."
+    },
+    "alwaysDay": {
+      "title": "Immer Tag-Modus",
+      "desc": "DeskyBuddy sieht immer wie am Tag aus, auch nachts — für jeden Charakter."
+    },
+    "idle": {
+      "title": "Idle-Animationen",
+      "desc": "Wie oft DeskyBuddy von selbst eine kleine Aktion macht (lesen, gähnen, würfeln ...), wenn er gerade nichts anderes tut.",
+      "intervalLabel": "alle ~{seconds}s"
+    },
+    "statsDecay": {
+      "title": "Verfall von Zuneigung/Hunger",
+      "desc": "Zuneigung und Sättigung sinken mit der Zeit wieder, wenn du DeskyBuddy eine Weile nicht streichelst oder fütterst."
+    },
+    "moodAffectsAnimations": {
+      "title": "Laune beeinflusst Animationen",
+      "desc": "Manche Idle-Animationen erscheinen nur, wenn DeskyBuddy gerade besonders gut gelaunt, mürrisch oder hungrig ist."
+    }
+  },
+  "character": {
+    "crab": "Krabbe",
+    "avocado": "Avocado",
+    "citrus": "Zitrusscheibe",
+    "bee": "Biene",
+    "monkey": "Affe",
+    "toast": "Toast",
+    "kaktus": "Kaktus",
+    "wolke": "Wolke",
+    "croissant": "Croissant",
+    "pilz": "Fliegenpilz"
+  }
+}
