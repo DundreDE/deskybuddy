@@ -670,6 +670,210 @@
       { holdMs: 200, transform: 'anim-spin' },
       { holdMs: 260, transform: null },
     ] },
+
+    // --- toast-specific ---
+    { id: 'toast-pop-up', appliesTo: ['toast'], frames: [
+      { holdMs: 220, transform: 'anim-bounce', particle: 'sparkle' },
+      { holdMs: 220, transform: 'anim-bounce' },
+      { holdMs: 220, transform: 'anim-bounce' },
+      { holdMs: 260, transform: null },
+    ], speech: 'Ping!' },
+    { id: 'toast-butter-melt', appliesTo: ['toast'], frames: [
+      { holdMs: 260, transform: 'anim-squish', mouthOpen: true },
+      { holdMs: 260, transform: 'anim-squish', mouthOpen: false },
+      { holdMs: 260, transform: 'anim-squish', mouthOpen: true },
+      { holdMs: 300, transform: null, mouthOpen: false },
+    ] },
+    { id: 'toast-warm-wobble', appliesTo: ['toast'], frames: [
+      { holdMs: 180, transform: 'anim-wobble' },
+      { holdMs: 180, transform: null },
+      { holdMs: 180, transform: 'anim-wobble' },
+      { holdMs: 180, transform: null },
+      { holdMs: 200, transform: 'anim-wobble' },
+      { holdMs: 220, transform: null },
+    ] },
+    { id: 'toast-crumb-shake', appliesTo: ['toast'], frames: [
+      { holdMs: 160, transform: 'anim-shake' },
+      { holdMs: 160, transform: null },
+      { holdMs: 160, transform: 'anim-shake' },
+      { holdMs: 200, transform: null },
+    ] },
+    { id: 'toast-sunbathe', appliesTo: ['toast'], frames: [
+      { holdMs: 800, transform: 'anim-tilt', particle: 'sparkle' },
+      { holdMs: 700, transform: 'anim-tilt' },
+      { holdMs: 400, transform: null },
+    ], speech: 'Schön knusprig warm...' },
+    { id: 'toast-jam-craving', appliesTo: ['toast'], frames: [
+      { holdMs: 260, transform: 'anim-nudge', mouthOpen: true },
+      { holdMs: 260, transform: 'anim-nudge', mouthOpen: false },
+      { holdMs: 300, transform: null },
+    ], speech: 'Mit Marmelade wär\'s noch besser!' },
+    { id: 'toast-golden-spin', appliesTo: ['toast'], frames: [
+      { holdMs: 200, transform: 'anim-spin' },
+      { holdMs: 200, transform: 'anim-spin', particle: 'sparkle' },
+      { holdMs: 260, transform: null },
+    ] },
+
+    // --- kaktus-specific ---
+    { id: 'kaktus-spine-prickle', appliesTo: ['kaktus'], frames: [
+      { holdMs: 160, transform: 'anim-shake' },
+      { holdMs: 160, transform: null },
+      { holdMs: 160, transform: 'anim-shake' },
+      { holdMs: 200, transform: null },
+    ] },
+    { id: 'kaktus-sunbathe', appliesTo: ['kaktus'], frames: [
+      { holdMs: 800, transform: 'anim-tilt', particle: 'sparkle' },
+      { holdMs: 700, transform: 'anim-tilt' },
+      { holdMs: 400, transform: null },
+    ], speech: 'Ich liebe die Sonne!' },
+    { id: 'kaktus-grow-wiggle', appliesTo: ['kaktus'], frames: [
+      { holdMs: 200, transform: 'anim-wobble' },
+      { holdMs: 200, transform: null },
+      { holdMs: 200, transform: 'anim-wobble' },
+      { holdMs: 220, transform: null },
+    ] },
+    { id: 'kaktus-flower-bloom', appliesTo: ['kaktus'], frames: [
+      { holdMs: 220, transform: 'anim-bounce', particle: 'sparkle' },
+      { holdMs: 220, transform: 'anim-bounce' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'kaktus-desert-stare', appliesTo: ['kaktus'], frames: [
+      { holdMs: 900, transform: null, blinking: false },
+      { holdMs: 250, transform: 'anim-nudge' },
+      { holdMs: 500, transform: null },
+    ] },
+    { id: 'kaktus-pot-rock', appliesTo: ['kaktus'], frames: [
+      { holdMs: 200, transform: 'anim-scuttle' },
+      { holdMs: 200, transform: null },
+      { holdMs: 200, transform: 'anim-scuttle' },
+      { holdMs: 220, transform: null },
+    ] },
+    { id: 'kaktus-prickly-hug-fail', appliesTo: ['kaktus'], frames: [
+      { holdMs: 260, transform: 'anim-nudge', mouthOpen: true },
+      { holdMs: 260, transform: null, mouthOpen: false },
+    ], speech: 'Vorsicht, ich pikse!' },
+
+    // --- wolke-specific ---
+    { id: 'wolke-drift-float', appliesTo: ['wolke'], frames: [
+      { holdMs: 500, transform: 'anim-tilt' },
+      { holdMs: 500, transform: null },
+      { holdMs: 500, transform: 'anim-tilt' },
+      { holdMs: 400, transform: null },
+    ] },
+    { id: 'wolke-thunder-shake', appliesTo: ['wolke'], frames: [
+      { holdMs: 140, transform: 'anim-shake', particle: 'sparkle' },
+      { holdMs: 140, transform: null },
+      { holdMs: 140, transform: 'anim-shake' },
+      { holdMs: 200, transform: null },
+    ], speech: 'Hat\'s geblitzt?!' },
+    { id: 'wolke-rainbow-shine', appliesTo: ['wolke'], frames: [
+      { holdMs: 220, transform: 'anim-bounce', particle: 'sparkle' },
+      { holdMs: 220, transform: 'anim-bounce' },
+      { holdMs: 220, transform: 'anim-bounce', particle: 'sparkle' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'wolke-puff-up', appliesTo: ['wolke'], frames: [
+      { holdMs: 220, transform: 'anim-stretch' },
+      { holdMs: 220, transform: 'anim-stretch' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'wolke-cozy-spin', appliesTo: ['wolke'], frames: [
+      { holdMs: 200, transform: 'anim-spin' },
+      { holdMs: 200, transform: 'anim-spin' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'wolke-cloud-squish', appliesTo: ['wolke'], frames: [
+      { holdMs: 220, transform: 'anim-squish' },
+      { holdMs: 220, transform: 'anim-squish' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'wolke-scarf-fluff', appliesTo: ['wolke'], frames: [
+      { holdMs: 260, transform: 'anim-nudge' },
+      { holdMs: 260, transform: null },
+      { holdMs: 260, transform: 'anim-nudge' },
+      { holdMs: 280, transform: null },
+    ], speech: 'Mag mein Schal!' },
+
+    // --- croissant-specific ---
+    { id: 'croissant-flaky-crumble', appliesTo: ['croissant'], frames: [
+      { holdMs: 160, transform: 'anim-shake', particle: 'sparkle' },
+      { holdMs: 160, transform: null },
+      { holdMs: 160, transform: 'anim-shake' },
+      { holdMs: 200, transform: null },
+    ] },
+    { id: 'croissant-warm-stretch', appliesTo: ['croissant'], frames: [
+      { holdMs: 220, transform: 'anim-stretch' },
+      { holdMs: 220, transform: 'anim-stretch' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'croissant-bakery-bounce', appliesTo: ['croissant'], frames: [
+      { holdMs: 220, transform: 'anim-bounce', particle: 'sparkle' },
+      { holdMs: 220, transform: 'anim-bounce' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'croissant-roll-wobble', appliesTo: ['croissant'], frames: [
+      { holdMs: 200, transform: 'anim-wobble' },
+      { holdMs: 200, transform: null },
+      { holdMs: 200, transform: 'anim-wobble' },
+      { holdMs: 220, transform: null },
+    ] },
+    { id: 'croissant-sugar-dust', appliesTo: ['croissant'], frames: [
+      { holdMs: 260, mouthOpen: true, particle: 'sparkle' },
+      { holdMs: 260, mouthOpen: false },
+      { holdMs: 260, mouthOpen: true, particle: 'sparkle' },
+      { holdMs: 280, mouthOpen: false },
+    ], speech: 'Frisch gebacken!' },
+    { id: 'croissant-oven-fresh', appliesTo: ['croissant'], frames: [
+      { holdMs: 900, transform: 'anim-tilt', particle: 'sparkle' },
+      { holdMs: 700, transform: 'anim-tilt' },
+      { holdMs: 400, transform: null },
+    ] },
+    { id: 'croissant-roll-in-place', appliesTo: ['croissant'], frames: [
+      { holdMs: 200, transform: 'anim-scuttle' },
+      { holdMs: 200, transform: null },
+      { holdMs: 200, transform: 'anim-scuttle' },
+      { holdMs: 220, transform: null },
+    ] },
+
+    // --- pilz-specific ---
+    { id: 'pilz-spore-puff', appliesTo: ['pilz'], frames: [
+      { holdMs: 220, transform: 'anim-squish', particle: 'sparkle' },
+      { holdMs: 220, transform: 'anim-squish' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'pilz-forest-hop', appliesTo: ['pilz'], frames: [
+      { holdMs: 220, transform: 'anim-bounce' },
+      { holdMs: 220, transform: 'anim-bounce', particle: 'sparkle' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'pilz-cap-tilt', appliesTo: ['pilz'], frames: [
+      { holdMs: 500, transform: 'anim-tilt' },
+      { holdMs: 500, transform: null },
+      { holdMs: 500, transform: 'anim-tilt' },
+      { holdMs: 400, transform: null },
+    ] },
+    { id: 'pilz-toadstool-wobble', appliesTo: ['pilz'], frames: [
+      { holdMs: 200, transform: 'anim-wobble' },
+      { holdMs: 200, transform: null },
+      { holdMs: 200, transform: 'anim-wobble' },
+      { holdMs: 220, transform: null },
+    ] },
+    { id: 'pilz-shroom-spin', appliesTo: ['pilz'], frames: [
+      { holdMs: 200, transform: 'anim-spin' },
+      { holdMs: 200, transform: 'anim-spin', particle: 'sparkle' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'pilz-dew-shake', appliesTo: ['pilz'], frames: [
+      { holdMs: 160, transform: 'anim-shake' },
+      { holdMs: 160, transform: null },
+      { holdMs: 160, transform: 'anim-shake' },
+      { holdMs: 200, transform: null },
+    ] },
+    { id: 'pilz-magic-glow', appliesTo: ['pilz'], frames: [
+      { holdMs: 260, transform: 'anim-nudge', particle: 'sparkle' },
+      { holdMs: 260, transform: 'anim-nudge' },
+      { holdMs: 300, transform: null },
+    ], speech: 'Ich glitzere!' },
   ];
 
   window.BuddyIdlePool = POOL;

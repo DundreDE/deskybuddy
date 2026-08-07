@@ -6,6 +6,11 @@ const CHARACTERS = [
   { value: 'citrus', emoji: '🍋', name: 'Zitrusscheibe' },
   { value: 'bee', emoji: '🐝', name: 'Biene' },
   { value: 'monkey', emoji: '🐒', name: 'Affe' },
+  { value: 'toast', emoji: '🍞', name: 'Toast' },
+  { value: 'kaktus', emoji: '🌵', name: 'Kaktus' },
+  { value: 'wolke', emoji: '☁️', name: 'Wolke' },
+  { value: 'croissant', emoji: '🥐', name: 'Croissant' },
+  { value: 'pilz', emoji: '🍄', name: 'Fliegenpilz' },
 ];
 let characterIndex = 0;
 let beeCollarColor = '#8fd6ff';
