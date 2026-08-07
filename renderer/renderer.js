@@ -88,7 +88,7 @@ function createLaptopAccessory() {
   return canvas;
 }
 
-const SPRITE_MODULES = { crab: window.PixelDragon, avocado: window.PixelAvocado, citrus: window.PixelCitrus, bee: window.PixelBee };
+const SPRITE_MODULES = { crab: window.PixelDragon, avocado: window.PixelAvocado, citrus: window.PixelCitrus, bee: window.PixelBee, monkey: window.PixelMonkey };
 
 let stageEl, dragonSprite, laptopEl, propMountEl;
 let isTypingFlag = false;

@@ -358,6 +358,48 @@
       { holdMs: 200, transform: 'anim-spin', particle: 'sparkle' },
       { holdMs: 260, transform: null },
     ] },
+
+    // --- monkey ---
+    { id: 'monkey-scratch-head', appliesTo: ['monkey'], frames: [
+      { holdMs: 220, transform: 'anim-nudge' },
+      { holdMs: 220, transform: 'anim-nudge' },
+      { holdMs: 220, transform: 'anim-nudge' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'monkey-arm-swing', appliesTo: ['monkey'], frames: [
+      { holdMs: 260, transform: 'anim-wobble' },
+      { holdMs: 260, transform: null },
+      { holdMs: 260, transform: 'anim-wobble' },
+      { holdMs: 260, transform: null },
+      { holdMs: 260, transform: 'anim-wobble' },
+      { holdMs: 260, transform: null },
+    ] },
+    { id: 'monkey-hang-stretch', appliesTo: ['monkey'], frames: [
+      { holdMs: 350, transform: 'anim-stretch' },
+      { holdMs: 450, transform: 'anim-stretch' },
+      { holdMs: 350, transform: 'anim-stretch' },
+      { holdMs: 300, transform: null },
+    ] },
+    { id: 'monkey-banana-snack', appliesTo: ['monkey'], frames: [
+      { holdMs: 350, prop: 'banana', propPos: 'hands' },
+      { holdMs: 300, prop: 'banana', propPos: 'hands', mouthOpen: true },
+      { holdMs: 300, prop: 'banana', propPos: 'hands', mouthOpen: false },
+      { holdMs: 300, prop: 'banana', propPos: 'hands', mouthOpen: true },
+      { holdMs: 300, prop: 'banana', propPos: 'hands', mouthOpen: false },
+      { holdMs: 300, prop: null },
+    ], speech: 'Lecker!' },
+    { id: 'monkey-ear-wiggle', appliesTo: ['monkey'], frames: [
+      { holdMs: 200, transform: 'anim-shake' },
+      { holdMs: 200, transform: null },
+      { holdMs: 200, transform: 'anim-shake' },
+      { holdMs: 220, transform: null },
+    ] },
+    { id: 'monkey-tumble-roll', appliesTo: ['monkey'], frames: [
+      { holdMs: 200, transform: 'anim-spin' },
+      { holdMs: 200, transform: 'anim-spin' },
+      { holdMs: 200, transform: 'anim-spin' },
+      { holdMs: 260, transform: null },
+    ] },
   ];
 
   window.BuddyIdlePool = POOL;

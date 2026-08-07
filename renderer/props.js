@@ -133,6 +133,14 @@
       set(5, 8, '#c97a1e');
       set(4, 9, '#c97a1e');
     },
+    banana: (set) => {
+      set(9, 1, '#7a4a2e');
+      rect(set, 6, 2, 8, 3, '#f2d24e');
+      rect(set, 4, 4, 6, 6, '#f2d24e');
+      rect(set, 2, 6, 5, 8, '#f2d24e');
+      rect(set, 1, 8, 4, 10, '#f2d24e');
+      rect(set, 1, 10, 3, 11, '#e0c04a');
+    },
   };
 
   function createPropIcon(name) {
