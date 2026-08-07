@@ -105,7 +105,20 @@
       "title": "Menu bar mode",
       "desc": "DeskyBuddy hangs from the menu bar at the top instead of roaming the Dock area at the bottom."
     },
-    "waylandWarning": "⚠️ Wayland session detected: typing detection, away detection, and hiding during fullscreen games don't work under Wayland and stay disabled."
+    "waylandWarning": "⚠️ Wayland session detected: typing detection, away detection, and hiding during fullscreen games don't work under Wayland and stay disabled.",
+    "wardrobeEnabled": {
+      "title": "Wardrobe",
+      "desc": "Dress DeskyBuddy up in unlocked accessories."
+    },
+    "seasonalWardrobe": {
+      "title": "Seasonal costumes",
+      "desc": "Some accessories unlock themselves automatically at the right time of year."
+    },
+    "weatherReaction": {
+      "title": "Weather reaction",
+      "desc": "DeskyBuddy dresses for the current weather at your location (e.g. an umbrella when it's raining).",
+      "placeholder": "Enter a city..."
+    }
   },
   "character": {
     "crab": "Crab",
@@ -118,5 +131,13 @@
     "wolke": "Cloud",
     "croissant": "Croissant",
     "pilz": "Toadstool"
+  },
+  "wardrobe": {
+    "items": {
+      "sunglasses": "Sunglasses",
+      "umbrella": "Umbrella",
+      "santaHat": "Santa Hat"
+    },
+    "unlockedNotification": "Newly unlocked: {item}!"
   }
 }

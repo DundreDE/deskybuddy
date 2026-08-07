@@ -25,6 +25,15 @@ module.exports = [
     },
   },
   {
+    // Shared data modules that export themselves both ways (require() from main.js, <script>
+    // tag from renderer) — see the files' own header comments for why.
+    files: ['wardrobe-catalog.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
+  {
     // Renderer scripts are loaded via plain <script> tags (see index.html/settings.html), not
     // ES modules — each is a script-scope IIFE that reads/writes globals on `window`.
     files: ['renderer/**/*.js'],

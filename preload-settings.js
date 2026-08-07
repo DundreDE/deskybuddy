@@ -15,4 +15,5 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   onLanguageUpdate: (callback) => {
     ipcRenderer.on('language-updated', (_event, payload) => callback(payload));
   },
+  setWardrobeEquipped: (id) => ipcRenderer.send('set-wardrobe-equipped', { id }),
 });

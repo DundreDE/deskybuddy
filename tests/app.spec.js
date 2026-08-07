@@ -182,6 +182,75 @@ test('a Wayland session shows the settings warning banner and disables affected 
   await expect(settingsWindow.locator('#waylandWarning')).toHaveText(/Wayland/);
 });
 
+test('equipping an unlocked wardrobe item persists and renders an overlay', async () => {
+  const window = await electronApp.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
+  // sunglasses is a 'manual'-unlock item, pre-unlocked in DEFAULT_STATE — no seeding needed.
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('set-wardrobe-equipped', {}, { id: 'sunglasses' });
+  });
+
+  const stateFile = path.join(userDataDir, 'buddy-state.json');
+  await expect.poll(() => tryReadJsonField(stateFile, 'wardrobe')?.equipped).toBe('sunglasses');
+  await expect
+    .poll(() => window.evaluate(() => document.querySelectorAll('#wardrobe-mount canvas').length))
+    .toBe(1);
+
+  // unequip
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('set-wardrobe-equipped', {}, { id: null });
+  });
+  await expect.poll(() => tryReadJsonField(stateFile, 'wardrobe')?.equipped).toBeNull();
+  await expect
+    .poll(() => window.evaluate(() => document.querySelectorAll('#wardrobe-mount canvas').length))
+    .toBe(0);
+});
+
+test('equipping a locked wardrobe item is rejected', async () => {
+  // santaHat is dateRange-locked by default (not in DEFAULT_STATE.wardrobe.unlocked).
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('set-wardrobe-equipped', {}, { id: 'santaHat' });
+  });
+
+  const stateFile = path.join(userDataDir, 'buddy-state.json');
+  // give it a moment to (not) persist, then confirm it never got set
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  expect(tryReadJsonField(stateFile, 'wardrobe')?.equipped).toBeUndefined();
+});
+
+test('a wardrobe item stays hidden on a character in its excludeFrom list', async () => {
+  const window = await electronApp.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
+  // avocado already wears a permanent built-in hat — santaHat's wardrobe-catalog.js entry
+  // excludes it. Force-unlock santaHat via a seeded state file so we can test the exclusion
+  // in isolation from the (separately tested) unlock gate.
+  await electronApp.close();
+  fs.writeFileSync(
+    path.join(userDataDir, 'buddy-state.json'),
+    JSON.stringify({ happiness: 50, fullness: 50, lastPetted: null, lastFed: null, wardrobe: { unlocked: ['santaHat'], equipped: null } })
+  );
+  fs.writeFileSync(path.join(userDataDir, 'buddy-settings.json'), JSON.stringify({ onboardingCompleted: true, character: 'avocado' }));
+  electronApp = await electron.launch({
+    args: [APP_ROOT, '--no-sandbox'],
+    env: { ...process.env, BUDDY_USER_DATA_DIR: userDataDir },
+  });
+  const avocadoWindow = await electronApp.firstWindow();
+  await avocadoWindow.waitForLoadState('domcontentloaded');
+
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.emit('set-wardrobe-equipped', {}, { id: 'santaHat' });
+  });
+
+  const stateFile = path.join(userDataDir, 'buddy-state.json');
+  await expect.poll(() => tryReadJsonField(stateFile, 'wardrobe')?.equipped).toBe('santaHat');
+  // equipped in state, but never rendered — avocado is excluded
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  const mountCount = await avocadoWindow.evaluate(() => document.querySelectorAll('#wardrobe-mount canvas').length);
+  expect(mountCount).toBe(0);
+});
+
 test('dragging the sprite past the threshold enters the DRAGGING state', async () => {
   const window = await electronApp.firstWindow();
   await window.waitForLoadState('domcontentloaded');

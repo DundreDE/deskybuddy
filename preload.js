@@ -57,4 +57,7 @@ contextBridge.exposeInMainWorld('buddyAPI', {
   onStatsUpdate: (callback) => {
     ipcRenderer.on('stats-updated', (_event, payload) => callback(payload));
   },
+  onWardrobeUnlocked: (callback) => {
+    ipcRenderer.on('wardrobe-item-unlocked', (_event, payload) => callback(payload));
+  },
 });

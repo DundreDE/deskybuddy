@@ -204,6 +204,40 @@ html, body {
   50% { transform: translateX(-50%) translateY(-8px); }
 }
 
+/* --- wardrobe overlay (renderer/wardrobe-items.js) — the currently-equipped item, one at a
+   time. Positions are approximate/shared across all ten characters (see that file's header
+   comment for why a single fixed spot is good enough here). --- */
+
+#wardrobe-mount {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wardrobe-icon {
+  position: absolute;
+  left: 50%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+}
+
+.wardrobe-pos-hat {
+  top: 32px;
+  transform: translateX(-50%);
+}
+
+.wardrobe-pos-eyes {
+  top: 26px;
+  transform: translateX(-50%);
+}
+
+.wardrobe-pos-held {
+  top: -22px;
+  transform: translateX(-50%);
+}
+
 /* --- idle-animation pool hard-keyframe motion classes (idle-director.js) ---
    Each has a plain and a *Left variant so it composes with the existing facing-left
    scaleX(-1) mirroring instead of momentarily un-flipping the sprite. Extra keyframe

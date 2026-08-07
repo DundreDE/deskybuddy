@@ -176,6 +176,53 @@
       padding: 4px 8px;
       font-size: 12.5px;
     }
+    .wardrobe-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: -8px 0 18px;
+    }
+    .wardrobe-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 72px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 6px;
+      cursor: pointer;
+      color: var(--fg);
+      font-size: 11px;
+      text-align: center;
+    }
+    .wardrobe-item.equipped { border-color: var(--accent); }
+    .wardrobe-item.locked { opacity: 0.45; cursor: default; }
+    .wardrobe-item .icon-frame {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .wardrobe-item canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
+    .weather-location-row {
+      display: none;
+      margin: -8px 0 18px;
+    }
+    .weather-location-row.visible { display: block; }
+    .weather-location-row input {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--card);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -229,6 +276,34 @@
     <button type="button" class="collar-swatch" data-color="#7ed957" style="background:#7ed957"></button>
     <button type="button" class="collar-swatch" data-color="#ffd166" style="background:#ffd166"></button>
     <button type="button" class="collar-swatch" data-color="#b28dff" style="background:#b28dff"></button>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title" data-i18n="settings.wardrobeEnabled.title">Kleiderschrank</div>
+      <div class="desc" data-i18n="settings.wardrobeEnabled.desc">Zieh DeskyBuddy freigeschaltete Accessoires an.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="wardrobeEnabled" /><span class="slider"></span></label>
+  </div>
+  <div class="wardrobe-picker" id="wardrobePicker"></div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title" data-i18n="settings.seasonalWardrobe.title">Saisonale Kostüme</div>
+      <div class="desc" data-i18n="settings.seasonalWardrobe.desc">Manche Accessoires schalten sich zur passenden Jahreszeit von selbst frei.</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="seasonalWardrobe" /><span class="slider"></span></label>
+  </div>
+
+  <div class="option">
+    <div class="text">
+      <div class="title" data-i18n="settings.weatherReaction.title">Wetter-Reaktion</div>
+      <div class="desc" data-i18n="settings.weatherReaction.desc">DeskyBuddy zieht sich passend zum aktuellen Wetter an deinem Ort an (z.B. Regenschirm bei Regen).</div>
+    </div>
+    <label class="switch"><input type="checkbox" id="weatherReaction" /><span class="slider"></span></label>
+  </div>
+  <div class="weather-location-row" id="weatherLocationRow">
+    <input type="text" id="weatherLocation" data-i18n-placeholder="settings.weatherReaction.placeholder" placeholder="Stadt eingeben..." />
   </div>
 
   <div class="option">
@@ -330,6 +405,8 @@
     <label class="switch"><input type="checkbox" id="menuBarMode" /><span class="slider"></span></label>
   </div>
 
+  <script src="../wardrobe-catalog.js"></script>
+  <script src="wardrobe-items.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>

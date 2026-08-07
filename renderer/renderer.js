@@ -31,6 +31,16 @@ function onboardingSteps() {
   return ONBOARDING_STEP_CONFIG.map(({ key, duration }) => ({ text: dict[key] || '', duration }));
 }
 
+// Dotted-path lookup with {placeholder} interpolation — same helper as settings.js's t(), needed
+// here for the wardrobe-unlock speech bubble (e.g. t('wardrobe.unlockedNotification', {item: ...})).
+function t(key, vars) {
+  const dict = currentStrings || {};
+  let value = key.split('.').reduce((obj, part) => (obj && obj[part] !== undefined ? obj[part] : undefined), dict);
+  if (value === undefined) return key;
+  if (vars) for (const [k, v] of Object.entries(vars)) value = value.replace(`{${k}}`, v);
+  return value;
+}
+
 const PARTICLE_SHAPES = {
   heart: ['.X.X.', 'XXXXX', 'XXXXX', '.XXX.', '..X..'],
   sparkle: ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..'],
@@ -112,7 +122,21 @@ const SPRITE_MODULES = {
   pilz: window.PixelPilz,
 };
 
-let stageEl, dragonSprite, laptopEl, propMountEl;
+let stageEl, dragonSprite, laptopEl, propMountEl, wardrobeMountEl;
+let equippedWardrobeId = null;
+
+// Re-renders the currently-equipped wardrobe overlay (renderer/wardrobe-items.js), hiding it if
+// the current character is in that item's excludeFrom list (wardrobe-catalog.js) — e.g. avocado
+// already wears a permanent built-in hat, so santaHat never shows there even if equipped.
+function renderWardrobe() {
+  if (!wardrobeMountEl) return;
+  wardrobeMountEl.innerHTML = '';
+  if (!wardrobeEnabled || !equippedWardrobeId) return;
+  const catalogEntry = window.WardrobeCatalog && window.WardrobeCatalog[equippedWardrobeId];
+  if (catalogEntry && catalogEntry.excludeFrom && catalogEntry.excludeFrom.includes(currentCharacter)) return;
+  const icon = window.BuddyWardrobeItems && window.BuddyWardrobeItems.create(equippedWardrobeId);
+  if (icon) wardrobeMountEl.appendChild(icon);
+}
 let isTypingFlag = false;
 let currentCharacter = 'crab';
 let beeCollarColor = window.PixelBee ? window.PixelBee.DEFAULT_COLLAR : '#8fd6ff';
@@ -128,6 +152,7 @@ let alwaysDayFlag = false;
 let idleIntervalSec = 30;
 let powerSaveActive = false;
 let moodAffectsAnimations = true;
+let wardrobeEnabled = true;
 let currentMood = 'neutral'; // 'happy' | 'neutral' | 'grumpy' | 'hungry' — see computeMood()
 
 // Mirrors the tamagotchi-style thresholds main.js already uses for its own hunger speech-bubble
@@ -157,6 +182,7 @@ function mountCharacter(character) {
   dragonSprite.canvas.classList.toggle('facing-left', facingLeft);
   dragonSprite.setHeadphones(listeningFlag);
   if (character === 'bee' && dragonSprite.setCollarColor) dragonSprite.setCollarColor(beeCollarColor);
+  renderWardrobe();
 }
 
 function updateLaptopVisibility() {
@@ -494,7 +520,7 @@ function wireEvents() {
     }, duration);
   });
 
-  window.buddyAPI.onInitConfig(({ forceNight: fn, character, alwaysDay, idleIntervalSec: interval, beeCollarColor: collar, moodAffectsAnimations: moodEnabled, showOnboarding }) => {
+  window.buddyAPI.onInitConfig(({ forceNight: fn, character, alwaysDay, idleIntervalSec: interval, beeCollarColor: collar, moodAffectsAnimations: moodEnabled, wardrobeEnabled: wardrobeOn, showOnboarding }) => {
     forceNight = fn;
     alwaysDayFlag = !!alwaysDay;
     applyDayNight();
@@ -510,6 +536,10 @@ function wireEvents() {
       if (idleDirector) idleDirector.setAverageGapSeconds(interval);
     }
     if (moodEnabled !== undefined) moodAffectsAnimations = !!moodEnabled;
+    if (wardrobeOn !== undefined) {
+      wardrobeEnabled = !!wardrobeOn;
+      renderWardrobe();
+    }
     if (showOnboarding) setTimeout(startOnboarding, 1800);
   });
 
@@ -528,18 +558,30 @@ function wireEvents() {
     applyDayNight();
   });
 
-  window.buddyAPI.onIdleConfigUpdate(({ idleIntervalSec: interval, moodAffectsAnimations: moodEnabled }) => {
+  window.buddyAPI.onIdleConfigUpdate(({ idleIntervalSec: interval, moodAffectsAnimations: moodEnabled, wardrobeEnabled: wardrobeOn }) => {
     if (interval !== undefined) {
       idleIntervalSec = interval;
       if (idleDirector) idleDirector.setAverageGapSeconds(interval);
     }
     if (moodEnabled !== undefined) moodAffectsAnimations = !!moodEnabled;
+    if (wardrobeOn !== undefined) {
+      wardrobeEnabled = !!wardrobeOn;
+      renderWardrobe();
+    }
   });
 
   window.buddyAPI.onStatsUpdate((state) => {
     if (state && state.happiness !== undefined && state.fullness !== undefined) {
       currentMood = computeMood(state);
     }
+    if (state && state.wardrobe && state.wardrobe.equipped !== equippedWardrobeId) {
+      equippedWardrobeId = state.wardrobe.equipped;
+      renderWardrobe();
+    }
+  });
+
+  window.buddyAPI.onWardrobeUnlocked(({ id }) => {
+    queueSpeech(t('wardrobe.unlockedNotification', { item: t(`wardrobe.items.${id}`) }), 3200);
   });
 
   // lookX comes in as real screen-space direction (cursor left/right of buddy). The whole
@@ -644,6 +686,7 @@ function init() {
 
   stageEl = document.getElementById('stage');
   propMountEl = document.getElementById('prop-mount');
+  wardrobeMountEl = document.getElementById('wardrobe-mount');
   laptopEl = createLaptopAccessory();
   document.getElementById('dragon-mount').appendChild(laptopEl);
   mountCharacter(currentCharacter);
@@ -691,6 +734,10 @@ function init() {
   window.buddyAPI.loadState().then((s) => {
     if (!s) return;
     currentMood = computeMood(s);
+    if (s.wardrobe) {
+      equippedWardrobeId = s.wardrobe.equipped;
+      renderWardrobe();
+    }
     if (s.fullness < 30) {
       setTimeout(() => queueSpeech('Ich hab ein bisschen Hunger...'), 2000);
     }

@@ -2,7 +2,9 @@ const { app, BrowserWindow, screen, ipcMain, Menu, Tray, nativeImage, dialog, sh
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const { execFile } = require('child_process');
+const WARDROBE_CATALOG = require('./wardrobe-catalog.js');
 
 // uiohook-napi / active-win are native modules — wrap the require so a failed/ABI-mismatched
 // native binary degrades the relevant feature instead of crashing the whole app.
@@ -86,7 +88,10 @@ const FORCE_NIGHT = process.env.BUDDY_FORCE_NIGHT === '1';
 if (process.env.BUDDY_USER_DATA_DIR) app.setPath('userData', process.env.BUDDY_USER_DATA_DIR);
 
 const STATE_PATH = path.join(app.getPath('userData'), 'buddy-state.json');
-const DEFAULT_STATE = { happiness: 50, fullness: 50, lastPetted: null, lastFed: null };
+// wardrobe.unlocked starts with both 'manual'-unlock items from wardrobe-catalog.js already
+// available (no achievement/level system yet to gate them behind — see roadmap v0.9); santaHat
+// (dateRange) starts locked and is added by checkSeasonalWardrobeUnlocks() once in season.
+const DEFAULT_STATE = { happiness: 50, fullness: 50, lastPetted: null, lastFed: null, wardrobe: { unlocked: ['sunglasses', 'umbrella'], equipped: null } };
 let state = { ...DEFAULT_STATE };
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'buddy-settings.json');
@@ -107,6 +112,10 @@ const DEFAULT_SETTINGS = {
   statsDecay: true,
   moodAffectsAnimations: true,
   menuBarMode: false, // macOS only — anchors near the top menu bar instead of the Dock/bottom edge
+  wardrobeEnabled: true,
+  seasonalWardrobe: true,
+  weatherReaction: false, // opt-in: needs a user-provided city and an outbound network call
+  weatherLocation: '',
 };
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -222,6 +231,10 @@ async function saveStateToDisk() {
 
 function broadcastState() {
   if (win && !win.isDestroyed()) win.webContents.send('stats-updated', state);
+  // The settings window's wardrobe picker shows unlocked/equipped state too (see
+  // settingsPayload()) — keep it live for changes that happen outside a settings save, like a
+  // seasonal unlock or a weather-driven auto-equip.
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings-updated', settingsPayload());
 }
 
 function updateStats(action) {
@@ -270,6 +283,162 @@ function startStatsDecay() {
 function stopStatsDecay() {
   if (statsDecayInterval) clearInterval(statsDecayInterval);
   statsDecayInterval = null;
+}
+
+// --- wardrobe ---
+// state.wardrobe = { unlocked: [ids...], equipped: id|null }. Item metadata (unlock condition,
+// per-character exclusion) lives in wardrobe-catalog.js; the pixel art lives in
+// renderer/wardrobe-items.js. Only one item can be worn at a time — see that file's header
+// comment for why a single overlay slot is the right scope for a first wardrobe iteration.
+
+function isWardrobeItemUnlocked(id) {
+  return !!(state.wardrobe && state.wardrobe.unlocked.includes(id));
+}
+
+function setEquippedWardrobeItem(id) {
+  if (id !== null && (!WARDROBE_CATALOG[id] || !isWardrobeItemUnlocked(id))) return; // unknown/locked id — ignore
+  if (state.wardrobe.equipped === id) return;
+  state.wardrobe.equipped = id;
+  saveStateToDisk();
+  broadcastState();
+}
+
+// MM-DD string range check; wraps around the year boundary when from > to (e.g. '12-20'..'01-05').
+function isTodayInMonthDayRange(from, to) {
+  const now = new Date();
+  const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return from <= to ? mmdd >= from && mmdd <= to : mmdd >= from || mmdd <= to;
+}
+
+let seasonalWardrobeInterval = null;
+const SEASONAL_WARDROBE_CHECK_MS = 6 * 60 * 60 * 1000; // cheap enough to just re-check regularly
+
+function checkSeasonalWardrobeUnlocks() {
+  if (!settings.seasonalWardrobe) return;
+  let changed = false;
+  for (const [id, entry] of Object.entries(WARDROBE_CATALOG)) {
+    if (entry.unlock.type !== 'dateRange') continue;
+    if (isWardrobeItemUnlocked(id)) continue;
+    if (isTodayInMonthDayRange(entry.unlock.from, entry.unlock.to)) {
+      state.wardrobe.unlocked.push(id);
+      changed = true;
+      if (win && !win.isDestroyed()) win.webContents.send('wardrobe-item-unlocked', { id });
+    }
+  }
+  if (changed) {
+    saveStateToDisk();
+    broadcastState();
+  }
+}
+
+function startSeasonalWardrobeWatch() {
+  if (seasonalWardrobeInterval) return;
+  seasonalWardrobeInterval = setInterval(checkSeasonalWardrobeUnlocks, SEASONAL_WARDROBE_CHECK_MS);
+  checkSeasonalWardrobeUnlocks();
+}
+
+function stopSeasonalWardrobeWatch() {
+  if (seasonalWardrobeInterval) {
+    clearInterval(seasonalWardrobeInterval);
+    seasonalWardrobeInterval = null;
+  }
+}
+
+// --- weather reaction ---
+// Open-Meteo (no API key, free for non-commercial use): geocode the user-entered city once,
+// then poll the current weather_code and auto-equip/unequip whichever wardrobe items declare
+// themselves weatherManaged for that condition (see wardrobe-catalog.js — currently just
+// umbrella for rain). Off by default: this is the first feature that needs a user-provided
+// location plus an outbound network call, unlike everything else in the app so far.
+
+const WEATHER_POLL_MS = 30 * 60 * 1000;
+let weatherInterval = null;
+let weatherCoords = null; // { lat, lon } — cached after geocoding, cleared if weatherLocation changes
+let weatherGeocodedFor = null; // the weatherLocation string weatherCoords was resolved for
+
+function httpsGetJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'DeskyBuddy' } }, (res) => {
+      if (res.statusCode !== 200) {
+        res.resume();
+        reject(new Error(`HTTP ${res.statusCode}`));
+        return;
+      }
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+async function geocodeWeatherLocation() {
+  const query = settings.weatherLocation && settings.weatherLocation.trim();
+  if (!query) return null;
+  try {
+    const data = await httpsGetJson(`https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(query)}`);
+    const first = data && Array.isArray(data.results) && data.results[0];
+    if (!first) return null;
+    return { lat: first.latitude, lon: first.longitude };
+  } catch (err) {
+    console.error('Buddy: weather geocoding failed', err);
+    return null;
+  }
+}
+
+// WMO weather codes (https://open-meteo.com/en/docs): 51-67 & 80-82 are drizzle/rain/showers,
+// 71-77 & 85-86 are snow. Everything else (clear, cloudy, fog, thunderstorm without the
+// rain-code range, ...) is treated as "no reaction" — only rain drives a wardrobe item for now.
+function weatherCodeToCondition(code) {
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'rain';
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return 'snow';
+  return 'clear';
+}
+
+function applyWeatherManagedWardrobe(condition) {
+  for (const [id, entry] of Object.entries(WARDROBE_CATALOG)) {
+    if (!entry.weatherManaged) continue;
+    const shouldWear = entry.weatherManaged === condition;
+    if (shouldWear && isWardrobeItemUnlocked(id)) {
+      setEquippedWardrobeItem(id);
+    } else if (!shouldWear && state.wardrobe.equipped === id) {
+      setEquippedWardrobeItem(null);
+    }
+  }
+}
+
+async function checkWeather() {
+  if (!settings.weatherReaction) return;
+  if (weatherGeocodedFor !== settings.weatherLocation) {
+    weatherCoords = await geocodeWeatherLocation();
+    weatherGeocodedFor = settings.weatherLocation;
+  }
+  if (!weatherCoords) return;
+  try {
+    const data = await httpsGetJson(`https://api.open-meteo.com/v1/forecast?latitude=${weatherCoords.lat}&longitude=${weatherCoords.lon}&current=weather_code`);
+    const code = data && data.current && data.current.weather_code;
+    applyWeatherManagedWardrobe(weatherCodeToCondition(code));
+  } catch (err) {
+    console.error('Buddy: weather check failed', err);
+  }
+}
+
+function startWeatherWatch() {
+  if (weatherInterval) return;
+  weatherInterval = setInterval(checkWeather, WEATHER_POLL_MS);
+  checkWeather();
+}
+
+function stopWeatherWatch() {
+  if (weatherInterval) {
+    clearInterval(weatherInterval);
+    weatherInterval = null;
+  }
 }
 
 // --- settings persistence ---
@@ -1001,6 +1170,8 @@ function applySettings() {
   if (settings.typingDetection && active) startTypingEval(); else stopTypingEval();
   if (settings.afkDetection && active) startAfkEval(); else stopAfkEval();
   if (settings.statsDecay && active) startStatsDecay(); else stopStatsDecay();
+  if (settings.seasonalWardrobe) startSeasonalWardrobeWatch(); else stopSeasonalWardrobeWatch();
+  if (settings.weatherReaction && active) startWeatherWatch(); else stopWeatherWatch();
   refreshUiohookLifecycle();
 }
 
@@ -1222,6 +1393,7 @@ function createWindow() {
       idleIntervalSec: settings.idleIntervalSec,
       beeCollarColor: settings.beeCollarColor,
       moodAffectsAnimations: settings.moodAffectsAnimations,
+      wardrobeEnabled: settings.wardrobeEnabled,
       showOnboarding,
     });
     if (showOnboarding) {
@@ -1273,12 +1445,20 @@ ipcMain.on('sleep-state-changed', (_event, { sleeping }) => {
 });
 
 ipcMain.handle('load-state', async () => state);
+ipcMain.on('set-wardrobe-equipped', (_event, { id }) => setEquippedWardrobeItem(id || null));
 
-// autostartBlockedByOS/isMac/waylandLimited are derived, not part of the persisted settings
-// file — merged in here purely for the settings window to display (isMac gates the menuBarMode
-// option's visibility; waylandLimited drives a warning banner about typing/afk/fullscreen detection).
+// autostartBlockedByOS/isMac/waylandLimited/wardrobe are derived, not part of the persisted
+// settings file — merged in here purely for the settings window to display (isMac gates the
+// menuBarMode option's visibility; waylandLimited drives a warning banner about typing/afk/
+// fullscreen detection; wardrobe is state.wardrobe, needed by the wardrobe picker UI).
 function settingsPayload() {
-  return { ...settings, autostartBlockedByOS, isMac: process.platform === 'darwin', waylandLimited: isWaylandSession() };
+  return {
+    ...settings,
+    autostartBlockedByOS,
+    isMac: process.platform === 'darwin',
+    waylandLimited: isWaylandSession(),
+    wardrobe: state.wardrobe,
+  };
 }
 
 ipcMain.handle('load-settings', async () => settingsPayload());
@@ -1288,6 +1468,7 @@ ipcMain.on('save-settings', (_event, { settings: newSettings }) => {
   const collarChanged = newSettings.beeCollarColor && newSettings.beeCollarColor !== settings.beeCollarColor;
   const languageChanged = newSettings.language !== undefined && newSettings.language !== settings.language;
   const menuBarModeChanged = newSettings.menuBarMode !== undefined && newSettings.menuBarMode !== settings.menuBarMode;
+  const weatherLocationChanged = newSettings.weatherLocation !== undefined && newSettings.weatherLocation !== settings.weatherLocation;
   settings = { ...settings, ...newSettings };
   saveSettingsToDisk();
   applySettings();
@@ -1297,12 +1478,15 @@ ipcMain.on('save-settings', (_event, { settings: newSettings }) => {
     clearRoamTimers();
     maybeScheduleRoam();
   }
+  // A city change should reflect immediately, not wait out whatever's left of the 30-min poll —
+  // startWeatherWatch() above only checks on a fresh start, so force it here if already running.
+  if (weatherLocationChanged && settings.weatherReaction) checkWeather();
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings-updated', settingsPayload());
   if (win && !win.isDestroyed()) {
     win.webContents.send('day-mode-updated', { alwaysDay: settings.alwaysDay });
     if (characterChanged) win.webContents.send('character-updated', { character: settings.character });
     if (collarChanged) win.webContents.send('collar-color-updated', { beeCollarColor: settings.beeCollarColor });
-    win.webContents.send('idle-config-updated', { idleIntervalSec: settings.idleIntervalSec, moodAffectsAnimations: settings.moodAffectsAnimations });
+    win.webContents.send('idle-config-updated', { idleIntervalSec: settings.idleIntervalSec, moodAffectsAnimations: settings.moodAffectsAnimations, wardrobeEnabled: settings.wardrobeEnabled });
   }
   if (languageChanged) {
     const payload = { language: resolveLanguage(), strings: currentStrings() };
@@ -1349,6 +1533,8 @@ app.on('before-quit', async () => {
   stopCursorLook();
   stopMultiMonitorWatch();
   stopStatsDecay();
+  stopSeasonalWardrobeWatch();
+  stopWeatherWatch();
   await saveStateToDisk();
   await saveSettingsToDisk();
 });

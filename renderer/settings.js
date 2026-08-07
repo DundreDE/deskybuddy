@@ -1,4 +1,4 @@
-const fields = ['autostart', 'mouseLook', 'typingDetection', 'musicDetection', 'afkDetection', 'multiMonitorFollow', 'hideFullscreen', 'alwaysDay', 'statsDecay', 'moodAffectsAnimations', 'menuBarMode'];
+const fields = ['autostart', 'mouseLook', 'typingDetection', 'musicDetection', 'afkDetection', 'multiMonitorFollow', 'hideFullscreen', 'alwaysDay', 'statsDecay', 'moodAffectsAnimations', 'menuBarMode', 'wardrobeEnabled', 'seasonalWardrobe', 'weatherReaction'];
 const rangeFields = ['idleIntervalSec'];
 const CHARACTERS = [
   { value: 'crab', emoji: '🦀' },
@@ -15,6 +15,7 @@ const CHARACTERS = [
 let characterIndex = 0;
 let beeCollarColor = '#8fd6ff';
 let currentStrings = null; // { onboarding, tray, settings: {...}, character: {...} } — see i18n/*.json
+let lastWardrobeState = null; // { unlocked: [...], equipped: id|null } — see wardrobe-catalog.js
 
 // Dotted-path lookup with {placeholder} interpolation, e.g. t('settings.idle.intervalLabel', { seconds: 30 }).
 function t(key, vars) {
@@ -31,8 +32,42 @@ function applyTranslations() {
   document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
   document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
   document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.setAttribute('title', t(el.dataset.i18nTitle)); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.setAttribute('placeholder', t(el.dataset.i18nPlaceholder)); });
   renderCharacter();
   updateIdleIntervalLabel(document.getElementById('idleIntervalSec').value);
+  renderWardrobePicker(lastWardrobeState);
+}
+
+function renderWardrobePicker(wardrobe) {
+  lastWardrobeState = wardrobe || lastWardrobeState;
+  const container = document.getElementById('wardrobePicker');
+  if (!container || !window.BuddyWardrobeItems || !currentStrings) return;
+  container.innerHTML = '';
+  const unlocked = (lastWardrobeState && lastWardrobeState.unlocked) || [];
+  const equipped = lastWardrobeState && lastWardrobeState.equipped;
+  window.BuddyWardrobeItems.ids.forEach((id) => {
+    const isUnlocked = unlocked.includes(id);
+    const isEquipped = equipped === id;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = `wardrobe-item${isEquipped ? ' equipped' : ''}${isUnlocked ? '' : ' locked'}`;
+    card.disabled = !isUnlocked;
+
+    const iconFrame = document.createElement('div');
+    iconFrame.className = 'icon-frame';
+    const icon = window.BuddyWardrobeItems.create(id);
+    if (icon) iconFrame.appendChild(icon);
+    card.appendChild(iconFrame);
+
+    const label = document.createElement('span');
+    label.textContent = isUnlocked ? t(`wardrobe.items.${id}`) : '🔒';
+    card.appendChild(label);
+
+    if (isUnlocked) {
+      card.addEventListener('click', () => window.settingsAPI.setWardrobeEquipped(isEquipped ? null : id));
+    }
+    container.appendChild(card);
+  });
 }
 
 function renderCharacter() {
@@ -70,6 +105,11 @@ function applyToForm(settings) {
   if (menuBarModeOption) menuBarModeOption.classList.toggle('visible', !!settings.isMac);
   const waylandWarning = document.getElementById('waylandWarning');
   if (waylandWarning) waylandWarning.classList.toggle('visible', !!settings.waylandLimited);
+  renderWardrobePicker(settings.wardrobe);
+  const weatherLocationEl = document.getElementById('weatherLocation');
+  if (weatherLocationEl && document.activeElement !== weatherLocationEl) weatherLocationEl.value = settings.weatherLocation || '';
+  const weatherLocationRow = document.getElementById('weatherLocationRow');
+  if (weatherLocationRow) weatherLocationRow.classList.toggle('visible', !!settings.weatherReaction);
   const character = settings.character || 'crab';
   const idx = CHARACTERS.findIndex((c) => c.value === character);
   characterIndex = idx >= 0 ? idx : 0;
@@ -96,6 +136,8 @@ function readForm() {
   settings.beeCollarColor = beeCollarColor;
   const languageEl = document.getElementById('language');
   if (languageEl) settings.language = languageEl.value;
+  const weatherLocationEl = document.getElementById('weatherLocation');
+  if (weatherLocationEl) settings.weatherLocation = weatherLocationEl.value.trim();
   return settings;
 }
 
@@ -125,6 +167,14 @@ async function init() {
     const el = document.getElementById(key);
     if (el) el.addEventListener('change', () => window.settingsAPI.saveSettings(readForm()));
   });
+
+  const weatherReactionEl = document.getElementById('weatherReaction');
+  const weatherLocationRow = document.getElementById('weatherLocationRow');
+  if (weatherReactionEl && weatherLocationRow) {
+    weatherReactionEl.addEventListener('change', () => weatherLocationRow.classList.toggle('visible', weatherReactionEl.checked));
+  }
+  const weatherLocationEl = document.getElementById('weatherLocation');
+  if (weatherLocationEl) weatherLocationEl.addEventListener('change', () => window.settingsAPI.saveSettings(readForm()));
 
   rangeFields.forEach((key) => {
     const el = document.getElementById(key);

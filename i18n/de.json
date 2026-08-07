@@ -105,7 +105,20 @@
       "title": "Menüleisten-Modus",
       "desc": "DeskyBuddy hängt an der Menüleiste oben, statt am Dock-Bereich unten zu laufen."
     },
-    "waylandWarning": "⚠️ Wayland-Sitzung erkannt: Tipp-Erkennung, Abwesenheits-Erkennung und Ausblenden bei Vollbild-Spielen funktionieren unter Wayland technisch nicht und bleiben deaktiviert."
+    "waylandWarning": "⚠️ Wayland-Sitzung erkannt: Tipp-Erkennung, Abwesenheits-Erkennung und Ausblenden bei Vollbild-Spielen funktionieren unter Wayland technisch nicht und bleiben deaktiviert.",
+    "wardrobeEnabled": {
+      "title": "Kleiderschrank",
+      "desc": "Zieh DeskyBuddy freigeschaltete Accessoires an."
+    },
+    "seasonalWardrobe": {
+      "title": "Saisonale Kostüme",
+      "desc": "Manche Accessoires schalten sich zur passenden Jahreszeit von selbst frei."
+    },
+    "weatherReaction": {
+      "title": "Wetter-Reaktion",
+      "desc": "DeskyBuddy zieht sich passend zum aktuellen Wetter an deinem Ort an (z.B. Regenschirm bei Regen).",
+      "placeholder": "Stadt eingeben..."
+    }
   },
   "character": {
     "crab": "Krabbe",
@@ -118,5 +131,13 @@
     "wolke": "Wolke",
     "croissant": "Croissant",
     "pilz": "Fliegenpilz"
+  },
+  "wardrobe": {
+    "items": {
+      "sunglasses": "Sonnenbrille",
+      "umbrella": "Regenschirm",
+      "santaHat": "Weihnachtsmütze"
+    },
+    "unlockedNotification": "Neu freigeschaltet: {item}!"
   }
 }

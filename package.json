@@ -1,6 +1,6 @@
 {
   "name": "deskybuddy",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "DeskyBuddy — a cute chibi desktop pet that sits on your taskbar.",
   "private": true,
   "main": "main.js",
@@ -51,6 +51,7 @@
       "renderer/**/*",
       "native/**/*",
       "i18n/**/*",
+      "wardrobe-catalog.js",
       "package.json"
     ],
     "asarUnpack": [
