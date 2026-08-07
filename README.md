@@ -1,6 +1,6 @@
 # DeskyBuddy
 
-Ein winziges Chibi-Haustier, das auf deiner Taskbar (Windows) bzw. am unteren Bildschirmrand (macOS Dock-Bereich, Linux Panel) sitzt, herumläuft, auf dich reagiert und sich streicheln/füttern/werfen lässt. Vier Charaktere zur Auswahl: Krabbe 🦀, Avocado 🥑, Zitrusscheibe 🍋, Biene 🐝.
+Ein winziges Chibi-Haustier, das auf deiner Taskbar (Windows) bzw. am unteren Bildschirmrand (macOS Dock-Bereich, Linux Panel) sitzt, herumläuft, auf dich reagiert und sich streicheln/füttern/werfen lässt. Zehn Charaktere zur Auswahl: Krabbe 🦀, Avocado 🥑, Zitrusscheibe 🍋, Biene 🐝, Affe 🐒, Toast 🍞, Kaktus 🌵, Wolke ☁️, Croissant 🥐, Fliegenpilz 🍄.
 
 ![icon](build/icon.png)
 
