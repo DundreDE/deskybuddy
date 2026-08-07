@@ -55,7 +55,12 @@ const AFK_EVAL_MS = 15000;
 const AFK_THRESHOLD_MS = 4 * 60 * 1000; // no keyboard/mouse activity for this long -> afk overlay
 const FULLSCREEN_POLL_MS = 2000;
 const MEDIA_POLL_MS = 6000;
-const MEDIA_SCRIPT_PATH = path.join(__dirname, 'native', 'get-media-status.ps1');
+// Packaged builds ship native/ inside app.asar, but powershell.exe reads real files, not the
+// virtual asar filesystem — asarUnpack (package.json) extracts native/ next to app.asar as
+// app.asar.unpacked, so redirect the path there when running packaged.
+const MEDIA_SCRIPT_PATH = app.isPackaged
+  ? path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'native', 'get-media-status.ps1')
+  : path.join(__dirname, 'native', 'get-media-status.ps1');
 const MULTI_MONITOR_POLL_MS = 2000;
 
 const FORCE_NIGHT = process.env.BUDDY_FORCE_NIGHT === '1';
@@ -590,6 +595,11 @@ async function checkFullscreen() {
       hiddenForFullscreen = false;
       win.showInactive();
     }
+    // Windows can silently drop our TOPMOST z-order relative to the taskbar when the
+    // foreground app changes (alt-tab, launching/closing windows) — re-assert on every
+    // poll tick instead of relying solely on the slow REALIGN_INTERVAL_MS self-heal,
+    // otherwise buddy stays sunk behind the taskbar until that timer fires.
+    if (!hiddenForFullscreen) win.setAlwaysOnTop(true, 'screen-saver');
   } catch (err) {
     // transient failures (permissions, no active window) — fail open, stay visible
   }
