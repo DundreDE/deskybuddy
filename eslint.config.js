@@ -9,10 +9,19 @@ module.exports = [
   },
   {
     // Electron main process, build scripts, and this config file itself: CommonJS, Node globals.
-    files: ['main.js', 'preload.js', 'preload-settings.js', 'scripts/**/*.js', 'eslint.config.js'],
+    files: ['main.js', 'preload.js', 'preload-settings.js', 'scripts/**/*.js', 'eslint.config.js', 'playwright.config.js'],
     languageOptions: {
       sourceType: 'commonjs',
       globals: { ...globals.node },
+    },
+  },
+  {
+    // Playwright specs: Node (require/process/__dirname) at the top level, but callbacks passed
+    // to page.evaluate()/electronApp.evaluate() run in a browser/Electron-renderer context.
+    files: ['tests/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node, ...globals.browser },
     },
   },
   {

@@ -3,3 +3,5 @@ dist/
 out/
 .claude/
 CLAUDE.md
+test-results/
+playwright-report/

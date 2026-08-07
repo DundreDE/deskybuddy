@@ -1,9 +1,8 @@
 const { app, BrowserWindow, screen, ipcMain, Menu, Tray, nativeImage, dialog, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
-const https = require('https');
-const os = require('os');
-const { execFile, spawn } = require('child_process');
+const { execFile } = require('child_process');
 
 // uiohook-napi / active-win are native modules — wrap the require so a failed/ABI-mismatched
 // native binary degrades the relevant feature instead of crashing the whole app.
@@ -64,6 +63,10 @@ const MEDIA_SCRIPT_PATH = app.isPackaged
 const MULTI_MONITOR_POLL_MS = 2000;
 
 const FORCE_NIGHT = process.env.BUDDY_FORCE_NIGHT === '1';
+
+// Test-only override so the Playwright/Electron suite (tests/) never touches a real user's
+// settings/state files — same spirit as BUDDY_FORCE_NIGHT above. Unset in normal use.
+if (process.env.BUDDY_USER_DATA_DIR) app.setPath('userData', process.env.BUDDY_USER_DATA_DIR);
 
 const STATE_PATH = path.join(app.getPath('userData'), 'buddy-state.json');
 const DEFAULT_STATE = { happiness: 50, fullness: 50, lastPetted: null, lastFed: null };
@@ -786,131 +789,81 @@ function setPowerSaveMode(enabled) {
 }
 
 // --- auto update ---
+// electron-updater reads its GitHub-provider config from package.json's build.publish (set at
+// build time into app-update.yml). It no-ops quietly in dev (app.isPackaged === false) instead
+// of hitting the network, unlike the old hand-rolled version of this that always called the
+// GitHub API — see AppUpdater.isUpdaterActive() in electron-updater for that behavior.
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
 
-// Compares two "vX.Y.Z"-ish version strings numerically (not lexically, so "v2.10.0" > "v2.9.0").
-// Returns >0 if a is newer, <0 if b is newer, 0 if equal.
-function compareVersions(a, b) {
-  const pa = a.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
-  const pb = b.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const diff = (pa[i] || 0) - (pb[i] || 0);
-    if (diff !== 0) return diff;
+// Only the manual "Nach Updates suchen..." tray action shows "already up to date" / error
+// dialogs — the silent startup check stays silent unless an update is actually found. Since
+// this app only ever runs one check at a time, a single shared flag is enough to tell them apart.
+let manualUpdateCheck = false;
+
+autoUpdater.on('error', (err) => {
+  console.error('Buddy: Update-Check fehlgeschlagen', err);
+  if (manualUpdateCheck) {
+    dialog.showMessageBox({
+      type: 'error',
+      title: 'DeskyBuddy',
+      message: 'Update-Check fehlgeschlagen.',
+      detail: String(err && err.message ? err.message : err),
+    });
   }
-  return 0;
-}
+  manualUpdateCheck = false;
+});
 
-function httpsGetJson(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'DeskyBuddy-Updater' } }, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        res.resume();
-        resolve(httpsGetJson(res.headers.location));
-        return;
-      }
-      if (res.statusCode !== 200) {
-        res.resume();
-        reject(new Error(`GitHub API antwortete mit ${res.statusCode}`));
-        return;
-      }
-      let body = '';
-      res.on('data', (chunk) => { body += chunk; });
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(body));
-        } catch (err) {
-          reject(err);
-        }
-      });
-    }).on('error', reject);
-  });
-}
+autoUpdater.on('update-not-available', () => {
+  if (manualUpdateCheck) {
+    dialog.showMessageBox({ type: 'info', title: 'DeskyBuddy', message: 'Du hast bereits die neueste Version.' });
+  }
+  manualUpdateCheck = false;
+});
 
-// Follows redirects manually (GitHub release assets 302 to an S3 URL) and streams to destPath.
-function downloadFile(url, destPath, redirectsLeft = 5) {
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'DeskyBuddy-Updater' } }, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirectsLeft > 0) {
-        res.resume();
-        resolve(downloadFile(res.headers.location, destPath, redirectsLeft - 1));
-        return;
-      }
-      if (res.statusCode !== 200) {
-        res.resume();
-        reject(new Error(`Download antwortete mit ${res.statusCode}`));
-        return;
-      }
-      const fileStream = fs.createWriteStream(destPath);
-      res.pipe(fileStream);
-      fileStream.on('finish', () => fileStream.close(() => resolve()));
-      fileStream.on('error', reject);
-    }).on('error', reject);
-  });
-}
+autoUpdater.on('update-available', async (info) => {
+  manualUpdateCheck = false;
+  const currentVersion = app.getVersion();
 
-async function checkForUpdates(manual = false) {
-  try {
-    const release = await httpsGetJson(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
-    if (!release || !release.tag_name) throw new Error('Keine Release-Daten erhalten');
-
-    const currentVersion = app.getVersion();
-    if (compareVersions(release.tag_name, currentVersion) <= 0) {
-      if (manual) {
-        await dialog.showMessageBox({
-          type: 'info',
-          title: 'DeskyBuddy',
-          message: 'Du hast bereits die neueste Version.',
-        });
-      }
-      return;
-    }
-
-    const assets = Array.isArray(release.assets) ? release.assets : [];
-    const winAsset = assets.find((a) => /\.exe$/i.test(a.name));
-
-    if (process.platform === 'win32' && winAsset) {
-      const { response } = await dialog.showMessageBox({
-        type: 'info',
-        title: 'DeskyBuddy Update',
-        message: `Eine neue Version ist verfügbar: ${release.tag_name} (installiert: v${currentVersion}).`,
-        detail: 'Jetzt herunterladen und installieren?',
-        buttons: ['Jetzt installieren', 'Später'],
-        defaultId: 0,
-        cancelId: 1,
-      });
-      if (response !== 0) return;
-
-      const destPath = path.join(os.tmpdir(), winAsset.name);
-      await downloadFile(winAsset.browser_download_url, destPath);
-
-      // NSIS one-click installer: launching it replaces the running install and relaunches the app.
-      // spawn (not execFile) so it detaches cleanly and outlives this process once we quit below.
-      spawn(destPath, [], { detached: true, stdio: 'ignore' }).unref();
-      app.quit();
-      return;
-    }
-
-    // Non-Windows (or no matching asset found): no in-app installer, just offer the releases page.
+  if (process.platform === 'win32') {
     const { response } = await dialog.showMessageBox({
       type: 'info',
       title: 'DeskyBuddy Update',
-      message: `Eine neue Version ist verfügbar: ${release.tag_name} (installiert: v${currentVersion}).`,
-      detail: 'Die Download-Seite auf GitHub öffnen?',
-      buttons: ['Seite öffnen', 'Später'],
+      message: `Eine neue Version ist verfügbar: v${info.version} (installiert: v${currentVersion}).`,
+      detail: 'Jetzt herunterladen und installieren?',
+      buttons: ['Jetzt installieren', 'Später'],
       defaultId: 0,
       cancelId: 1,
     });
-    if (response === 0) shell.openExternal(release.html_url || `https://github.com/${GITHUB_REPO}/releases/latest`);
-  } catch (err) {
-    console.error('Buddy: Update-Check fehlgeschlagen', err);
-    if (manual) {
-      await dialog.showMessageBox({
-        type: 'error',
-        title: 'DeskyBuddy',
-        message: 'Update-Check fehlgeschlagen.',
-        detail: String(err && err.message ? err.message : err),
-      });
-    }
+    if (response === 0) autoUpdater.downloadUpdate();
+    return;
   }
+
+  // macOS/Linux: unsigned builds can't self-install via electron-updater's silent updaters
+  // (Squirrel.Mac validates code signatures; we don't sign — see README), so just offer the
+  // GitHub releases page, same as before.
+  const { response } = await dialog.showMessageBox({
+    type: 'info',
+    title: 'DeskyBuddy Update',
+    message: `Eine neue Version ist verfügbar: v${info.version} (installiert: v${currentVersion}).`,
+    detail: 'Die Download-Seite auf GitHub öffnen?',
+    buttons: ['Seite öffnen', 'Später'],
+    defaultId: 0,
+    cancelId: 1,
+  });
+  if (response === 0) shell.openExternal(`https://github.com/${GITHUB_REPO}/releases/latest`);
+});
+
+// NSIS one-click installer: quitAndInstall() replaces the running install and relaunches the app.
+autoUpdater.on('update-downloaded', () => autoUpdater.quitAndInstall());
+
+function checkForUpdates(manual = false) {
+  manualUpdateCheck = manual;
+  autoUpdater.checkForUpdates().catch((err) => {
+    // also surfaces via the 'error' event above; this catch only guards the returned promise
+    // itself from becoming an unhandled rejection.
+    console.error('Buddy: checkForUpdates() rejected', err);
+  });
 }
 
 // --- menu / tray ---

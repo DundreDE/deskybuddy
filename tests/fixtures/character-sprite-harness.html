@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body>
+<script src="../../renderer/character-base.js"></script>
+<script src="../../renderer/crab.js"></script>
+<script src="../../renderer/avocado.js"></script>
+<script src="../../renderer/citrus.js"></script>
+<script src="../../renderer/bee.js"></script>
+<script src="../../renderer/monkey.js"></script>
+<script src="../../renderer/toast.js"></script>
+<script src="../../renderer/kaktus.js"></script>
+<script src="../../renderer/wolke.js"></script>
+<script src="../../renderer/croissant.js"></script>
+<script src="../../renderer/pilz.js"></script>
+<script>
+// Mounts every character sprite, exercises every setter it exposes, and reports a small
+// summary object on window.__TEST_RESULTS__ for tests/character-sprites.spec.js to read.
+function runCharacterSpriteChecks() {
+  const modules = {
+    crab: window.PixelCrab,
+    avocado: window.PixelAvocado,
+    citrus: window.PixelCitrus,
+    bee: window.PixelBee,
+    monkey: window.PixelMonkey,
+    toast: window.PixelToast,
+    kaktus: window.PixelKaktus,
+    wolke: window.PixelWolke,
+    croissant: window.PixelCroissant,
+    pilz: window.PixelPilz,
+  };
+  const results = {};
+  for (const [name, mod] of Object.entries(modules)) {
+    try {
+      if (!mod) { results[name] = { ok: false, error: 'missing module' }; continue; }
+      const sprite = mod.create();
+      sprite.setBlinking(true);
+      sprite.setMouthOpen(true);
+      sprite.setLegPhase(1);
+      sprite.setStanding(true);
+      sprite.setPalette('night');
+      sprite.setLook(1, -1);
+      sprite.setHeadphones(true);
+      sprite.setPalette('day');
+      sprite.setStanding(false);
+      sprite.setBlinking(false);
+      sprite.setMouthOpen(false);
+      sprite.setHeadphones(false);
+      if (sprite.setPose) sprite.setPose('wave');
+      if (sprite.setCore) sprite.setCore({ dx: 1, hidden: false });
+      if (sprite.resetCore) sprite.resetCore();
+      if (sprite.setCollarColor) sprite.setCollarColor('#ff0000');
+      const ctx = sprite.canvas.getContext('2d');
+      const pixels = ctx.getImageData(0, 0, sprite.canvas.width, sprite.canvas.height).data;
+      let paintedPixels = 0;
+      for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0) paintedPixels++;
+      results[name] = { ok: true, width: sprite.canvas.width, height: sprite.canvas.height, paintedPixels };
+    } catch (err) {
+      results[name] = { ok: false, error: String(err && err.stack ? err.stack : err) };
+    }
+  }
+  window.__TEST_RESULTS__ = results;
+}
+runCharacterSpriteChecks();
+</script>
+</body>
+</html>
