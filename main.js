@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const os = require('os');
-const { execFile, spawn } = require('child_process');
+const { execFile, execFileSync, spawn } = require('child_process');
 
 // uiohook-napi / active-win are native modules — wrap the require so a failed/ABI-mismatched
 // native binary degrades the relevant feature instead of crashing the whole app.
@@ -146,12 +146,33 @@ function easeOutBounce(t) {
 let currentDisplay = null;
 
 function getAnchorGeometryFor(display) {
-  const { workArea } = display;
-  const taskbarTop = workArea.y + workArea.height;
-  const y = taskbarTop + FOOT_OVERLAP - WINDOW_HEIGHT;
+  const { workArea, bounds } = display;
+  // Most panels (Windows taskbar, GNOME/KDE bottom bar, ...) reserve space at the bottom, so
+  // the workArea's bottom edge sits right above the bar and buddy sinks its feet into it.
+  // Hyprland's default Omarchy setup instead pins waybar to the *top* of the screen, which
+  // leaves the workArea flush with the real bottom screen edge — sinking feet there would
+  // hang them off the monitor with nothing to stand on. Anchor against whichever edge
+  // actually lost space to a bar instead of assuming it's always the bottom one.
+  const hasBottomBar = (bounds.y + bounds.height) > (workArea.y + workArea.height);
+  const floorY = hasBottomBar ? workArea.y + workArea.height : bounds.y + bounds.height;
+  const overlap = hasBottomBar ? FOOT_OVERLAP : 0;
+  const y = floorY + overlap - WINDOW_HEIGHT;
   const minX = workArea.x;
   const maxX = workArea.x + workArea.width - WINDOW_WIDTH;
   return { y, minX, maxX };
+}
+
+// Hyprland sets this env var for every process in the session; waybar is the panel Omarchy
+// (and most other Hyprland setups) ships by default. Detected purely for diagnostics — the
+// anchor fix above already adapts to a top-pinned bar without needing to special-case it.
+function isHyprlandWaybarSession() {
+  if (process.platform !== 'linux' || !process.env.HYPRLAND_INSTANCE_SIGNATURE) return false;
+  try {
+    execFileSync('pgrep', ['-x', 'waybar'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function getAnchorGeometry() {
@@ -1115,6 +1136,9 @@ app.whenReady().then(async () => {
   // Dock icon/app-switcher entry, matching how it already hides from the Windows taskbar
   // (skipTaskbar) and stays out of the Linux taskbar equivalent (all WMs we target honor it).
   if (process.platform === 'darwin' && app.dock) app.dock.hide();
+  if (isHyprlandWaybarSession()) {
+    console.log('Buddy: Hyprland + waybar erkannt (Omarchy-Setup) — Panel-Anker folgt der echten Balkenkante, egal ob oben oder unten.');
+  }
   await loadStateFromDisk();
   await loadSettingsFromDisk();
   createWindow();

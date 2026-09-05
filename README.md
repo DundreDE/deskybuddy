@@ -23,6 +23,8 @@ sudo pacman -U deskybuddy-<version>.pacman
 
 Läuft auf Arch Linux und darauf aufbauenden Distros wie [Omarchy](https://omarchy.org) unverändert (Hyprland/Wayland-Sessions starten Electron-Apps automatisch über XWayland). Das Paket bringt seine eigenen Laufzeit-Abhängigkeiten (`gtk3`, `nss`, `libnotify`, `libxss`, `libxtst`, `libxrandr`, `libxinerama`, `libxi`, `libappindicator-gtk3`) über `pacman` mit.
 
+Buddy erkennt eine Hyprland+waybar-Session (Omarchys Standard-Setup) automatisch und setzt seinen Panel-Anker auf die tatsächlich belegte Bildschirmkante — bei Omarchy sitzt waybar standardmäßig oben, dann steht Buddy unten am echten Bildschirmrand statt mit den Füßen ins Leere zu hängen. Bei einer unten angedockten Leiste (der Normalfall auf den meisten anderen Desktops) bleibt das bekannte "Füße sinken in die Leiste"-Verhalten erhalten.
+
 ### macOS: Gatekeeper-Warnung umgehen
 
 Da die App (noch) nicht mit einem Apple-Developer-Zertifikat signiert/notarisiert ist, blockiert macOS den ersten Start. Rechtsklick auf `DeskyBuddy.app` → **Öffnen** → im Dialog nochmal **Öffnen** bestätigen. Danach startet sie normal per Doppelklick.
