@@ -4,12 +4,14 @@
   "description": "DeskyBuddy — a cute chibi desktop pet that sits on your taskbar.",
   "private": true,
   "main": "main.js",
+  "desktopName": "deskybuddy.desktop",
   "scripts": {
     "start": "electron .",
     "icon": "node scripts/generate-icon.js",
     "dist": "electron-builder --win --linux",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",
+    "dist:arch": "electron-builder --linux pacman",
     "dist:mac": "electron-builder --mac"
   },
   "devDependencies": {
@@ -56,10 +58,28 @@
       "icon": "build/icon.png"
     },
     "linux": {
-      "target": [{ "target": "AppImage", "arch": ["x64"] }, { "target": "deb", "arch": ["x64"] }],
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] },
+        { "target": "pacman", "arch": ["x64"] }
+      ],
       "category": "Utility",
       "icon": "build/icon.png",
-      "maintainer": "deskybuddy"
+      "maintainer": "deskybuddy",
+      "syncDesktopName": true
+    },
+    "pacman": {
+      "depends": [
+        "gtk3",
+        "nss",
+        "libnotify",
+        "libxss",
+        "libxtst",
+        "libxrandr",
+        "libxinerama",
+        "libxi",
+        "libappindicator-gtk3"
+      ]
     }
   }
 }
