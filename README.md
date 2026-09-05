@@ -12,7 +12,16 @@ Jedes Mal, wenn hier ein neues [GitHub Release](https://github.com/DundreDE/desk
 |---|---|---|
 | Windows | `DeskyBuddy-Setup-<version>.exe` | One-Click-Installer, kein Admin nötig, landet im Start-Menü + Autostart-Option |
 | macOS | `DeskyBuddy-<version>.dmg` / `.zip` | Unsigniert — Gatekeeper wird beim ersten Start warnen, siehe unten |
-| Linux | `DeskyBuddy-<version>.AppImage` / `.deb` | AppImage braucht keine Installation, `.deb` für Debian/Ubuntu |
+| Linux (Debian/Ubuntu) | `DeskyBuddy-<version>.AppImage` / `.deb` | AppImage braucht keine Installation, `.deb` für Debian/Ubuntu |
+| Arch Linux / Omarchy | `deskybuddy-<version>.pacman` | Natives Pacman-Paket, siehe unten |
+
+### Arch Linux / Omarchy: Pacman-Paket installieren
+
+```bash
+sudo pacman -U deskybuddy-<version>.pacman
+```
+
+Läuft auf Arch Linux und darauf aufbauenden Distros wie [Omarchy](https://omarchy.org) unverändert (Hyprland/Wayland-Sessions starten Electron-Apps automatisch über XWayland). Das Paket bringt seine eigenen Laufzeit-Abhängigkeiten (`gtk3`, `nss`, `libnotify`, `libxss`, `libxtst`, `libxrandr`, `libxinerama`, `libxi`, `libappindicator-gtk3`) über `pacman` mit.
 
 ### macOS: Gatekeeper-Warnung umgehen
 
@@ -54,7 +63,8 @@ Kein Build-Schritt, kein Bundler — die Renderer-Dateien werden per `<script>`-
 ```bash
 npm run dist:win     # NSIS-Installer, nur von Windows aus
 npm run dist:mac     # dmg + zip, nur von macOS aus
-npm run dist:linux   # AppImage + deb, nur von Linux aus
+npm run dist:linux   # AppImage + deb + pacman, nur von Linux aus
+npm run dist:arch    # nur das Pacman-Paket
 ```
 
 Native Module (`uiohook-napi`, `active-win`) und die Linux-Packaging-Tools (`mksquashfs`, `dpkg-deb`) lassen sich nicht plattformübergreifend cross-kompilieren — jeder Installer muss auf seinem Ziel-Betriebssystem gebaut werden. Der Workflow in `.github/workflows/build.yml` übernimmt das automatisch über eine Runner-Matrix.

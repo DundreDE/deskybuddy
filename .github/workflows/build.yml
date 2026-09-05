@@ -49,6 +49,7 @@ jobs:
             dist/*.zip
             dist/*.AppImage
             dist/*.deb
+            dist/*.pacman
       # Only attaches to a release when the workflow was triggered by publishing one —
       # a manual workflow_dispatch run still uploads the build-artifact above but skips this.
       - name: Attach installers to the release
@@ -58,7 +59,7 @@ jobs:
         shell: bash
         run: |
           shopt -s nullglob
-          files=(dist/*.exe dist/*.dmg dist/*.zip dist/*.AppImage dist/*.deb)
+          files=(dist/*.exe dist/*.dmg dist/*.zip dist/*.AppImage dist/*.deb dist/*.pacman)
           if [ ${#files[@]} -eq 0 ]; then
             echo "No installer files found to upload" >&2
             exit 1
